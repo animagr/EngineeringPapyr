@@ -16,9 +16,9 @@ A web app for engineering calculations with:
 
 ## What's Different in EngineeringPapyr
 
-EngineeringPaPyr replaces that entire stack:
+EngineeringPapyr replaces that entire stack:
 
-| Aspect | Original Standalone | EngineeringPaPyr |
+| Aspect | Original Standalone | EngineeringPapyr |
 |--------|-------------------|------------------|
 | Window | System browser (Chrome/Firefox) | Native window (Edge WebView2) |
 | Python runtime | Pyodide (WASM, ~92MB) | Native CPython |
@@ -77,7 +77,7 @@ Statistical tolerance analysis cell that computes the RSS error envelope. Unlike
 ### 1. Install Python dependencies
 
 ```bash
-cd C:\Claude\EngPaper\EngineeringPaPyr
+cd C:\Claude\EngPaper\EngineeringPapyr
 py -3.10 -m pip install -r requirements.txt
 ```
 
@@ -86,7 +86,7 @@ py -3.10 -m pip install -r requirements.txt
 **Windows users:** Run `npm install` from **Git Bash**, not PowerShell or cmd. Some dependencies require bash to build.
 
 ```bash
-cd C:\Claude\EngPaper\EngineeringPaPyr\frontend
+cd C:\Claude\EngPaper\EngineeringPapyr\frontend
 npm install
 npm run build:native
 ```
@@ -96,18 +96,18 @@ Output goes to `frontend/public/`.
 ### 3. Run the app
 
 ```bash
-cd C:\Claude\EngPaper\EngineeringPaPyr
+cd C:\Claude\EngPaper\EngineeringPapyr
 py -3.10 python/main.py
 ```
 
 ### 4. Package as .exe
 
 ```bash
-cd C:\Claude\EngPaper\EngineeringPaPyr
+cd C:\Claude\EngPaper\EngineeringPapyr
 py -3.10 build.py
 ```
 
-Output: `dist/EngineeringPaPyr.exe`
+Output: `dist/EngineeringPapyr.exe`
 
 ---
 
