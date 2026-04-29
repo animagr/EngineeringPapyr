@@ -1,0 +1,9 @@
+pywebview>=5.0
+sympy>=1.13
+numpy
+scipy
+scikit-learn
+CoolProp
+jedi
+pyinstaller
+typing_extensions
