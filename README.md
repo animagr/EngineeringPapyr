@@ -184,6 +184,53 @@ The JS-Python boundary is 100% JSON strings in both directions. PyWebView runs A
 
 ---
 
+## Standard Part Selector
+
+A built-in code cell function for snapping calculated values to standard component series (0.1% resistors, 1% resistors, capacitors, inductors).
+
+**Function definition:**
+
+```
+SelectStd([any], [any]) = [any]
+```
+
+**Code area:**
+
+```python
+from standard_parts import (
+    std_res_01, std_res_1, std_cap, std_ind,
+    select_nearest, select_up, select_down
+)
+
+# Mode: 1=RES 0.1%, 2=RES 1%, 3=CAP, 4=IND
+#       Negative for next value DOWN, e.g. -1 = RES 0.1% round down
+#       Add 10 for next value UP, e.g. 11 = RES 0.1% round up
+_SERIES = {1: std_res_01, 2: std_res_1, 3: std_cap, 4: std_ind}
+
+def calculate(target, mode):
+    mode = int(mode)
+    if mode > 10:
+        series = _SERIES[mode - 10]
+        return select_up(target, series)
+    elif mode < 0:
+        series = _SERIES[-mode]
+        return select_down(target, series)
+    else:
+        series = _SERIES[mode]
+        return select_nearest(target, series)
+```
+
+**Then in math cells:**
+
+```
+R_std = SelectStd(4870, 1) =        ← nearest 0.1% resistor
+R_up = SelectStd(4870, 11) =        ← next 0.1% resistor up
+R_down = SelectStd(4870, -1) =      ← next 0.1% resistor down
+C_std = SelectStd(0.0000047, 3) =   ← nearest standard capacitor
+```
+
+---
+
 ## Troubleshooting
 
 - **SymPy first import takes 2-5 seconds** — the app shows "Loading Python..." during this, normal behavior
