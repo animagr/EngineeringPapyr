@@ -8,3 +8,5 @@ jedi
 pypandoc_binary
 pyinstaller
 typing_extensions
+openpyxl
+matplotlib
