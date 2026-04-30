@@ -29,7 +29,7 @@ EngineeringPapyr replaces that entire stack:
 | Code completion | Jedi via Pyodide Worker | Jedi via native Python |
 | Packaging | Node.js exe via pkg | Python exe via PyInstaller |
 
-All features are preserved: math cells, documentation cells, system solve cells, EVA/RSS analysis cells, code cells, plot cells, fluid cells, data tables, DOCX export (native pandoc via pypandoc), and PDF export (print dialog). Code cells can import any pip-installed Python package.
+All features are preserved: math cells, documentation cells, system solve cells, EVA/RSS analysis cells, code cells, plot cells, fluid cells, data tables, DOCX export (native pandoc via pypandoc), and PDF export (print dialog). Code cells can now import any pip-installed Python package on the computer.
 
 ---
 
@@ -101,18 +101,21 @@ cd C:\Claude\EngPaper\EngineeringPapyr\frontend
 rm -rf public/build
 ```
 
-### 3. Run the app (Preferred Method)
+### 3. Run the app (recommended)
+
+Running directly from Python gives code cells full access to your Python environment — any package you `pip install` is immediately available for import.
 
 ```Powershell
-cd C:\Claude\EngPaper\EngineeringPapyr
 py -3.12 python/main.py
 ```
-or Run.bat from root
 
-### 4. Package as .exe (Freezes python modules)
+Or double-click `Run.bat` from the repo root.
+
+### 4. Package as .exe (portable, frozen)
+
+Packages the app into a single standalone executable. Python and all dependencies are frozen at build time — code cells can only import packages that were installed when the exe was built. To add more packages, `pip install` them and rebuild.
 
 ```Powershell
-cd C:\Claude\EngPaper\EngineeringPapyr
 py -3.12 build.py
 ```
 
