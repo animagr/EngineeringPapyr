@@ -1,4 +1,4 @@
-# EngineeringPapyr — Native Desktop Edition
+# EngineeringPapyr
 
 A native Windows desktop build of [EngineeringPaper.xyz](https://engineeringpaper.xyz) using **PyWebView** + **native Python** instead of Pyodide/WebAssembly. Calculations run via native CPython with SymPy — faster startup, faster computation (3-5x faster), and a smaller footprint.
 
@@ -31,6 +31,8 @@ EngineeringPapyr replaces that entire stack:
 
 All features are preserved: math cells, documentation cells, system solve cells, EVA/RSS analysis cells, code cells, plot cells, fluid cells, data tables, DOCX export (native pandoc via pypandoc), and PDF export (print dialog). Code cells can now import any pip-installed Python package on the computer.
 
+![EngineeringPapyr — Op-Amp EVA analysis with sensitivity results](Screenshot1.png)
+
 ---
 
 ## Additional Features 
@@ -62,6 +64,12 @@ Statistical tolerance analysis cell that computes the RSS error envelope. Unlike
 2. Insert an RSS cell
 3. Set the **Query** field to the expression to evaluate
 4. Add parameter rows with **Parameter** name, **Min**, **Nominal**, and **Max** values
+
+### Example
+
+The included `Example.epxyz` file demonstrates both EVA and RSS analysis on an op-amp non-inverting amplifier with divided feedback. It models `V_OUT` as a function of resistor tolerances (`R_lower`, `R_upper`), bias current (`I_B`), offset current (`I_OS`), and offset voltage (`V_OS`), showing worst-case bounds, statistical bounds, and per-parameter sensitivity.
+
+Open it from the app via the file open button or drag and drop.
 
 ---
 
