@@ -101,6 +101,14 @@ cd C:\Claude\EngPaper\EngineeringPapyr\frontend
 rm -rf public/build
 ```
 
+To clear the WebView2 browser cache (e.g., if the app shows stale images or assets after an update), close the app and delete:
+
+```
+%APPDATA%\pywebview\EBWebView
+```
+
+This folder is recreated automatically on next launch.
+
 ### 3. Run the app (recommended)
 
 Running directly from Python gives code cells full access to your Python environment — any package you `pip install` is immediately available for import.

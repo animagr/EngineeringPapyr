@@ -108,7 +108,11 @@ class Api:
                 return str(bundled)
         try:
             import pypandoc
-            return pypandoc.get_pandoc_path()
+            p = Path(pypandoc.get_pandoc_path())
+            if not p.exists() and p.with_suffix('.exe').exists():
+                p = p.with_suffix('.exe')
+            if p.exists():
+                return str(p)
         except Exception:
             pass
         return shutil.which('pandoc')

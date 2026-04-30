@@ -6,7 +6,7 @@ import webview
 
 from api import Api
 
-__version__ = '1.0.1'
+__version__ = '1.0.2'
 
 
 def get_public_path() -> Path:

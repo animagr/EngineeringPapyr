@@ -1971,8 +1971,21 @@ If problem persists after attempting to refresh the page, please report problem 
     if (settings.docType === "docx" && __STANDALONE__) {
       modalInfo = {state: "generatingDocument", modalOpen: true, heading: "Generating Document"};
       try {
-        const { generateDocx } = await import("./docxExport");
-        const docxBlob = await generateDocx(markDown, appState.title, settings.paperSize);
+        const resultStr: string = await (window as any).pywebview.api.export_docx(
+          JSON.stringify({ markdown: markDown, title: appState.title, paperSize: settings.paperSize })
+        );
+        const result = JSON.parse(resultStr);
+        if (result.error) {
+          throw new Error(result.error);
+        }
+        const raw = atob(result.data);
+        const bytes = new Uint8Array(raw.length);
+        for (let i = 0; i < raw.length; i++) {
+          bytes[i] = raw.charCodeAt(i);
+        }
+        const docxBlob = new Blob([bytes], {
+          type: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+        });
 
         if (window.showSaveFilePicker) {
           const handle = await window.showSaveFilePicker({
@@ -2522,7 +2535,7 @@ If problem persists after attempting to refresh the page, please report problem 
       slot="platform"
       onclick={() => appState.activeCell = -1}
     >
-      <img class="logo" src="print_logo.png" alt="EngineeringPapyr">
+      <img class="logo" src="print_logo.png?v={appState.currentVersion}" alt="EngineeringPapyr">
     </span>
     
     {#if serviceWorkerUpdateWaiting}
@@ -2819,7 +2832,7 @@ If problem persists after attempting to refresh the page, please report problem 
       />
 
       <div class="print-logo">
-        Created with: <img src="print_logo.png" alt="EngineeringPapyr" height="26 px">
+        Created with: <img src="print_logo.png?v={appState.currentVersion}" alt="EngineeringPapyr" height="26 px">
       </div>
 
       <div class="bottom-spacer" class:inIframe></div>
