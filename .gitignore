@@ -19,6 +19,9 @@ frontend/public/parserWorker.js
 *.manifest
 *.exe
 
+# Build artifacts
+python/installed_packages.json
+
 # IDE
 .vscode/
 .idea/

@@ -101,14 +101,15 @@ cd C:\Claude\EngPaper\EngineeringPapyr\frontend
 rm -rf public/build
 ```
 
-### 3. Run the app
+### 3. Run the app (Preferred Method)
 
 ```Powershell
 cd C:\Claude\EngPaper\EngineeringPapyr
 py -3.12 python/main.py
 ```
+or Run.bat from root
 
-### 4. Package as .exe
+### 4. Package as .exe (Freezes python modules)
 
 ```Powershell
 cd C:\Claude\EngPaper\EngineeringPapyr

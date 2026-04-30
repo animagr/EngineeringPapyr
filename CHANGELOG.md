@@ -13,15 +13,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `pypandoc_binary` dependency for native pandoc support.
 - Code cell Python info tooltip now shows live Python version and all installed packages from the native environment.
 - Users can import any `pip install`-ed package in code cells.
+- Build script (`build.py`) now generates `installed_packages.json` at build time and bundles pandoc binary into the exe.
 
 ### Changed
 
 - DOCX export now uses native pandoc via Python backend (`pypandoc`) instead of `pandoc-wasm` in the browser.
+- DOCX export save dialog uses `showSaveFilePicker` API for proper file saving in PyWebView.
 - Rebranded UI text and URLs from EngineeringPaper.xyz to EngineeringPapyr.
 - GitHub link in side nav now points to `animagr/EngineeringPapyr`.
 - Bug report and error messages now link to GitHub Issues instead of upstream email.
 - Package name in `package.json` changed from `svelte-app` to `engineering-papyr`.
 - Code cell package detection replaced with native Python introspection via `importlib.metadata`.
+
+### Fixed
+
+- DOCX export not working in PyWebView (anchor-click downloads don't trigger in WebView2).
+- Pandoc not found in packaged exe (now bundled via PyInstaller and located at runtime).
+- Code cell package list empty in packaged exe (`importlib.metadata` doesn't work when frozen; now reads static JSON).
 
 ### Removed
 
@@ -60,5 +68,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Pyodide/WASM dependency.
 - Cloudflare Pages Functions backend.
 
-[unreleased]: https://github.com/animagr/EngineeringPapyr/compare/v1.0.0...HEAD
+[unreleased]: https://github.com/animagr/EngineeringPapyr/compare/v1.0.1...HEAD
+[1.0.1]: https://github.com/animagr/EngineeringPapyr/compare/v1.0.0...v1.0.1
 [1.0.0]: https://github.com/animagr/EngineeringPapyr/releases/tag/v1.0.0

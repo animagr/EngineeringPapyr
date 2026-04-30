@@ -66,7 +66,7 @@ class Api:
 
     def export_docx(self, json_str: str) -> str:
         try:
-            import pypandoc
+            import subprocess
 
             params = json.loads(json_str)
             markdown = params['markdown']
@@ -74,21 +74,25 @@ class Api:
             paper_size = params.get('paperSize', 'letter')
 
             geometry = 'a4paper' if paper_size == 'a4' else 'letterpaper'
+            pandoc = self._find_pandoc()
+            if not pandoc:
+                return json.dumps({'error': 'pandoc not found'})
 
             with tempfile.TemporaryDirectory() as tmp:
-                output_path = str(Path(tmp) / 'output.docx')
-                pypandoc.convert_text(
-                    markdown,
-                    'docx',
-                    format='markdown',
-                    outputfile=output_path,
-                    extra_args=[
-                        '--standalone',
-                        f'--metadata=title:{title}',
-                        f'-V geometry:{geometry}',
-                    ],
-                )
-                docx_bytes = Path(output_path).read_bytes()
+                input_path = Path(tmp) / 'input.md'
+                output_path = Path(tmp) / 'output.docx'
+                input_path.write_text(markdown, encoding='utf-8')
+
+                cmd = [
+                    pandoc, str(input_path),
+                    '-o', str(output_path),
+                    '--standalone',
+                    f'--metadata=title:{title}',
+                    f'-V geometry:{geometry}',
+                ]
+                subprocess.run(cmd, check=True, capture_output=True, timeout=30)
+
+                docx_bytes = output_path.read_bytes()
                 return json.dumps({
                     'data': base64.b64encode(docx_bytes).decode('ascii'),
                 })
@@ -96,16 +100,32 @@ class Api:
             traceback.print_exc()
             return json.dumps({'error': str(e)})
 
+    def _find_pandoc(self) -> str | None:
+        import shutil
+        if getattr(sys, 'frozen', False):
+            bundled = Path(sys._MEIPASS) / 'pandoc.exe'
+            if bundled.exists():
+                return str(bundled)
+        try:
+            import pypandoc
+            return pypandoc.get_pandoc_path()
+        except Exception:
+            pass
+        return shutil.which('pandoc')
+
     def is_python_ready(self) -> bool:
         return True
 
     def get_python_info(self) -> str:
-        from importlib.metadata import distributions
         packages = {}
-        for dist in distributions():
-            name = dist.metadata['Name']
-            version = dist.metadata['Version']
-            packages[name] = version
+        if getattr(sys, 'frozen', False):
+            pkg_file = Path(sys._MEIPASS) / 'installed_packages.json'
+            if pkg_file.exists():
+                packages = json.loads(pkg_file.read_text(encoding='utf-8'))
+        else:
+            from importlib.metadata import distributions
+            for dist in distributions():
+                packages[dist.metadata['Name']] = dist.metadata['Version']
         return json.dumps({
             'pythonVersion': sys.version.split()[0],
             'packages': packages,

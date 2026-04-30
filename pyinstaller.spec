@@ -1,14 +1,28 @@
 # -*- mode: python ; coding: utf-8 -*-
 
+import os
+
 block_cipher = None
+
+# Bundle pandoc binary if build.py found it
+pandoc_path = os.environ.get('PANDOC_BINARY_PATH', '')
+extra_binaries = []
+if pandoc_path and os.path.isfile(pandoc_path):
+    extra_binaries.append((pandoc_path, '.'))
+
+# Bundle installed packages metadata
+extra_datas = [
+    ('frontend/public', 'public'),
+]
+packages_json = os.path.join('python', 'installed_packages.json')
+if os.path.isfile(packages_json):
+    extra_datas.append((packages_json, '.'))
 
 a = Analysis(
     ['python/main.py'],
     pathex=['python'],
-    binaries=[],
-    datas=[
-        ('frontend/public', 'public'),
-    ],
+    binaries=extra_binaries,
+    datas=extra_datas,
     hiddenimports=[
         'sympy',
         'sympy.core',
