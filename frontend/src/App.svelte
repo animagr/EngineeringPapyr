@@ -2246,6 +2246,7 @@ If problem persists after attempting to refresh the page, please report problem 
     height: fit-content !important;
     width: 100vw;
     justify-content: flex-end;
+    background-color: #000000 !important;
   }
 
   :global(.bx--header a) {
@@ -2521,7 +2522,7 @@ If problem persists after attempting to refresh the page, please report problem 
       slot="platform"
       onclick={() => appState.activeCell = -1}
     >
-      <img class="logo" src="logo_dark.svg" alt="EngineeringPapyr">
+      <img class="logo" src="print_logo.png" alt="EngineeringPapyr">
     </span>
     
     {#if serviceWorkerUpdateWaiting}
