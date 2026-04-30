@@ -1,7 +1,6 @@
 import { loadMathJax } from "../utility";
 import { BaseCell, type DatabaseCodeCell } from "./BaseCell";
 import { MathField } from "./MathField.svelte";
-import pyodideInfo from "../pyodide-info.json";
 
 export type CodeCellDims = CodeCellDimsSpecific | CodeCellDimsAny | CodeCellDimsRender | CodeCellDimsDummy;
 
@@ -43,10 +42,7 @@ export type CodeCellFunction = {
   inputDims: CodeCellInputOutputDims[],
   outputDims: CodeCellInputOutputDims,
   sympyMode: boolean,
-  neededPyodidePackages: string[]
 }
-
-const availableModulesRegExp = new RegExp(Object.keys(pyodideInfo.availablePackages).join("|"), "g");
 
 export default class CodeCell extends BaseCell {
   //@ts-ignore
@@ -57,8 +53,6 @@ export default class CodeCell extends BaseCell {
   code: string;
   sympyMode: boolean = $state();
   mathField: MathField = $state();
-  neededPyodidePackages: Set<string> = new Set(['numpy']);
-
   constructor (arg?: DatabaseCodeCell) {
     super("code", arg?.id);
     if (arg === undefined) {
@@ -150,18 +144,10 @@ export default class CodeCell extends BaseCell {
         inputDims: this.mathField.statement.inputDims,
         outputDims: this.mathField.statement.outputDims,
         sympyMode: this.sympyMode,
-        neededPyodidePackages: [...this.neededPyodidePackages]
       }
     } else {
       return null;
     }
-  }
-
-  updateNeededPyodidePackages() {
-    const packageMatches: string[] = this.code.match(availableModulesRegExp) || [];
-    const pyodideNames = packageMatches.map(key => pyodideInfo.availablePackages[key].pyodideName);
-    this.neededPyodidePackages = new Set(pyodideNames);
-    this.neededPyodidePackages.add('numpy');
   }
 
 }

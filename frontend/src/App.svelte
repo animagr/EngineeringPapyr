@@ -31,7 +31,6 @@
   import DocumentTitle from "./DocumentTitle.svelte";
   import UnitsDocumentation from "./UnitsDocumentation.svelte";
   import KeyboardShortcuts from "./KeyboardShortcuts.svelte";
-  import Terms from "./Terms.svelte";
   import RequestPersistentStorage from "./RequestPersistentStorage.svelte";
   import Updates from "./Updates.svelte";
   import InsertSheetModal from "./InsertSheetModal.svelte";
@@ -70,7 +69,6 @@
   import Help from "carbon-icons-svelte/lib/Help.svelte";
   import Launch from "carbon-icons-svelte/lib/Launch.svelte";
   import Keyboard from "carbon-icons-svelte/lib/Keyboard.svelte";
-  import InformationFilled from "carbon-icons-svelte/lib/InformationFilled.svelte";
   import ErrorFilled from "carbon-icons-svelte/lib/ErrorFilled.svelte";
   import Download from "carbon-icons-svelte/lib/Download.svelte";
   import Renew from "carbon-icons-svelte/lib/Renew.svelte";
@@ -101,12 +99,10 @@
 
   const tutorialHash = "fPMFb3PZhRKpfJuBaJ2HDR";
 
-  let termsAccepted = $state(appState.termsVersion);
-
   // need for File System Access API calls
   const fileTypes = [
             {
-              description: "EngineeringPaper.xyz Files",
+              description: "EngineeringPapyr Files",
               accept: {"application/json": [".epxyz"]},
             }
           ];
@@ -114,7 +110,7 @@
   const exampleSheets = [
     {
       path: `/${tutorialHash}`,
-      title: "Introduction to EngineeringPaper"
+      title: "Introduction to EngineeringPapyr"
     },
     {
       path: "/g4MZrw8GUPdHBSUTzGbQjb",
@@ -156,39 +152,39 @@
 
   const prebuiltTables = [
     {
-      url: "https://engineeringpaper.xyz/PaFvsBhgoJdZEEwyBLPnD6",
+      url: "https://github.com/animagr/EngineeringPapyr/PaFvsBhgoJdZEEwyBLPnD6",
       title: "Mechanical Properties of Metals" 
     },
     {
-      url: "https://engineeringpaper.xyz/QF5ThTJMUhn2sLBxM4Vyr9",
+      url: "https://github.com/animagr/EngineeringPapyr/QF5ThTJMUhn2sLBxM4Vyr9",
       title: "Coefficients of Friction" 
     },
     {
-      url: "https://engineeringpaper.xyz/FwahHU9W8ht28t9p4LNqFd",
+      url: "https://github.com/animagr/EngineeringPapyr/FwahHU9W8ht28t9p4LNqFd",
       title: "Coefficients of Thermal Expansion" 
     },
     {
-      url: "https://engineeringpaper.xyz/iBxxaDryEV8NkdrNdsZzvF",
+      url: "https://github.com/animagr/EngineeringPapyr/iBxxaDryEV8NkdrNdsZzvF",
       title: "Electrical Properties of Conductors" 
     },
     {
-      url: "https://engineeringpaper.xyz/EyXiBtFajaDHpxqRpvGQFX",
+      url: "https://github.com/animagr/EngineeringPapyr/EyXiBtFajaDHpxqRpvGQFX",
       title: "Dielectric Properties" 
     },
     {
-      url: "https://engineeringpaper.xyz/EnZhHT9wvsESXvRChZ7TLV",
+      url: "https://github.com/animagr/EngineeringPapyr/EnZhHT9wvsESXvRChZ7TLV",
       title: "Properties of Liquids" 
     },
     {
-      url: "https://engineeringpaper.xyz/djW5XrzFThKvTgk9XTtxwT",
+      url: "https://github.com/animagr/EngineeringPapyr/djW5XrzFThKvTgk9XTtxwT",
       title: "Beam Section Properties" 
     },
     {
-      url: "https://engineeringpaper.xyz/XvB4X3qGDZoupFyRCLbWmL",
+      url: "https://github.com/animagr/EngineeringPapyr/XvB4X3qGDZoupFyRCLbWmL",
       title: "W-Beam Properties" 
     },
     {
-      url: "https://engineeringpaper.xyz/ndyjJRwvqoJBfVLw7BGFfu",
+      url: "https://github.com/animagr/EngineeringPapyr/ndyjJRwvqoJBfVLw7BGFfu",
       title: "Musical Note Frequencies" 
     }
   ];
@@ -361,20 +357,11 @@
 
       try {
         const previousVisit = await get('previousVisit');
-        const localTermsAccepted = await get('termsAccepted');
-        if (localTermsAccepted === undefined || localTermsAccepted === true) {
-          // need to check against true since this feature initially stored
-          // true in local storage when terms were accepted
-          termsAccepted = 0;
-        } else {
-          termsAccepted = localTermsAccepted;
-        }
         if (previousVisit) {
           firstTime = false;
         }
       } catch(e) {
         firstTime = true;
-        termsAccepted = 0;
         console.log(`Error checking if first use: ${e}`);
       }
 
@@ -449,14 +436,6 @@
     await tick();
   }
 
-  function showTerms() {
-    modalInfo = {
-      modalOpen: true,
-      state: "termsAndConditions",
-      heading: "Terms and Conditions"
-    };
-  }
-
   function showRequestPersistentStorage() {
     modalInfo = {
       modalOpen: true,
@@ -464,18 +443,6 @@
       heading: "Enable Persistent Local Storage"
     };
   }
-
-  async function acceptTerms() {
-    if (termsAccepted < appState.termsVersion) {
-      termsAccepted = appState.termsVersion;
-      try {
-          await set('termsAccepted', termsAccepted);
-      } catch (e) {
-          console.log(`Error updating termsAccepted entry: ${e}`);
-      }
-    }
-  }
-
 
   function handleMotionPreferenceChange(event) {
     appState.prefersReducedMotion = event.matches;
@@ -763,11 +730,6 @@
         window.history.replaceState(currentStateObject, "", currentState);
       }
 
-      if (firstTime && searchParams.get("modal") === "terms") {
-        window.history.replaceState(window.history.state, "", window.location.pathname)
-        showTerms();
-      }
-
       refreshingSheet = false;
     } else {
       // another refresh is already in progress
@@ -781,8 +743,7 @@
     await refreshSheet(); // pushState does not trigger onpopstate event
   }
 
-  async function getResults(statementsAndSystems: StatementsAndSystems, myRefreshCount: BigInt,
-                      neededPyodidePackages: string[]): Promise<Results> {
+  async function getResults(statementsAndSystems: StatementsAndSystems, myRefreshCount: BigInt): Promise<Results> {
     const jsonStr = JSON.stringify($state.snapshot(statementsAndSystems));
     try {
       const resultStr: string = await (window as any).pywebview.api.solve_sheet(jsonStr);
@@ -1050,28 +1011,7 @@
         error = "";
       }
 
-      let neededPyodidePackages: Set<string> = new Set();
-      if (statementsAndSystemsObject.fluidFunctions.length > 0) {
-        neededPyodidePackages.add('coolprop');
-      }
-      if (statementsAndSystemsObject.interpolationFunctions.length > 0) {
-        neededPyodidePackages.add('numpy');
-      }
-      if (statementsAndSystemsObject.interpolationFunctions
-            .reduce((accum, value) => accum || (value.numInputs > 1), false)) {
-        neededPyodidePackages.add('scipy');
-      }
-      if (statementsAndSystemsObject.interpolationFunctions
-            .reduce((accum, value) => accum || (value.type === "polyfit" && value.numInputs > 1), false)) {
-        neededPyodidePackages.add('scikit-learn');
-      }
-
-      for (const codeCellFunction of statementsAndSystemsObject.codeCellFunctions) {
-        neededPyodidePackages = neededPyodidePackages.union(new Set(codeCellFunction.neededPyodidePackages));
-      }
-
-      pythonReadyPromise = getResults(statementsAndSystemsObject,
-                                  myRefreshCount, [...neededPyodidePackages])
+      pythonReadyPromise = getResults(statementsAndSystemsObject, myRefreshCount)
       .then((data: Results) => {
         clearResults();
         appState.resultsInvalid = false;
@@ -1216,8 +1156,7 @@
         state: "error",
         error: `<p>Error retrieving sheet ${window.location}. The URL may be incorrect or
 the server may be temporarily overloaded or down. If problem persists, please report problem to
-<a href="mailto:support@engineeringpaper.xyz?subject=Error Retrieving Sheet&body=Sheet that failed to load: ${encodeURIComponent(window.location.href)}">support@engineeringpaper.xyz</a>.  
-Please include a link to this sheet in the email to assist in debugging the problem. <br>${error} </p>`,
+<a href="https://github.com/animagr/EngineeringPapyr/issues" target="_blank">GitHub Issues</a>. <br>${error} </p>`,
         modalOpen: true,
         heading: "Retrieving Sheet"
       };
@@ -1243,10 +1182,9 @@ Please include a link to this sheet in the email to assist in debugging the prob
       modalInfo = {
         state: "error",
         error: `<p>Error regenerating sheet ${window.location}.
-This is most likely due to a bug in EngineeringPaper.xyz.
+This is most likely due to a bug in EngineeringPapyr.
 If problem persists after attempting to refresh the page, please report problem to
-<a href="mailto:support@engineeringpaper.xyz?subject=Error Regenerating Sheet&body=Sheet that failed to load: ${encodeURIComponent(window.location.href)}">support@engineeringpaper.xyz</a>.  
-Please include a link to this sheet in the email to assist in debugging the problem. </p>`,
+<a href="https://github.com/animagr/EngineeringPapyr/issues" target="_blank">GitHub Issues</a>. </p>`,
         modalOpen: true,
         heading: "Retrieving Sheet"
       };
@@ -1471,7 +1409,7 @@ Please include a link to this sheet in the email to assist in debugging the prob
     } else {
       modalInfo = {
         state: "error",
-        error: `Error Opening File. Make sure you have chosen a valid EngineeringPaper.xyz file.`,
+        error: `Error Opening File. Make sure you have chosen a valid EngineeringPapyr file.`,
         modalOpen: true,
         heading: "Opening File"
       };
@@ -1495,10 +1433,10 @@ Please include a link to this sheet in the email to assist in debugging the prob
       modalInfo = {
         state: "error",
         error: `<p>${error} <br><br>
-Error parsing input file. Make sure your attempting to open an EngineeringPaper.xyz file.
+Error parsing input file. Make sure your attempting to open an EngineeringPapyr file.
 <br><br>
-If this problem persists after verifying the file is an EngineeringPaper.xyz file,
-email support@engineeringpaper.xyz
+If this problem persists after verifying the file is an EngineeringPapyr file,
+report at <a href="https://github.com/animagr/EngineeringPapyr/issues" target="_blank">GitHub Issues</a>.
 If possible, please attach the file that is not opening.
  </p>`,
         modalOpen: true,
@@ -1526,10 +1464,10 @@ If possible, please attach the file that is not opening.
       modalInfo = {
         state: "error",
         error: `<p>Error restoring file. <br><br>
-          Error parsing input file. Make sure your attempting to open an EngineeringPaper.xyz file.
+          Error parsing input file. Make sure your attempting to open an EngineeringPapyr file.
 <br><br>
-If this problem persists after verifying the file is an EngineeringPaper.xyz file,
-email support@engineeringpaper.xyz
+If this problem persists after verifying the file is an EngineeringPapyr file,
+report at <a href="https://github.com/animagr/EngineeringPapyr/issues" target="_blank">GitHub Issues</a>.
 with the file that is not opening attached, if possible. </p>`,
         modalOpen: true,
         heading: "Restoring Sheet"
@@ -1580,10 +1518,10 @@ and the browser, where they were originally generated.
 <br><br>
 There are several possible causes for this error.
 Autosave checkpoints are stored locally on the browser that you are working on. Autosave checkpoints are not permanent 
-and may be deleted by your browser to free up space. EngineeringPaper.xyz will only retain the ${numCheckpoints} most recent checkpoints.
+and may be deleted by your browser to free up space. EngineeringPapyr will only retain the ${numCheckpoints} most recent checkpoints.
 Some browsers, Safari for example, automatically delete local browser storage
 for a website that has not been visited in the previous 7 days. To request that your browser retains the storage used by
-EngineeringPaper.xyz, use the "Enable Persistent Local Storage" option on the left menu. 
+EngineeringPapyr, use the "Enable Persistent Local Storage" option on the left menu. 
  </p>`,
         modalOpen: true,
         heading: "Restoring Sheet"
@@ -1597,10 +1535,9 @@ EngineeringPaper.xyz, use the "Enable Persistent Local Storage" option on the le
       modalInfo = {
         state: "error",
         error: `<p>Error restoring autosave checkpoint ${window.location}.
-This is most likely due to a bug in EngineeringPaper.xyz.
+This is most likely due to a bug in EngineeringPapyr.
 If problem persists after attempting to refresh the page, please report problem to
-<a href="mailto:support@engineeringpaper.xyz?subject=Error Regenerating Sheet&body=Sheet that failed to load: ${encodeURIComponent(window.location.href)}">support@engineeringpaper.xyz</a>.  
-Please include a link to this sheet in the email to assist in debugging the problem. </p>`,
+<a href="https://github.com/animagr/EngineeringPapyr/issues" target="_blank">GitHub Issues</a>. </p>`,
         modalOpen: true,
         heading: "Restoring Sheet"
       };
@@ -1702,12 +1639,12 @@ Please include a link to this sheet in the email to assist in debugging the prob
       try {
         sheetHash = getSheetHash(new URL(sheetUrl));
         if (sheetHash === "") {
-          throw new Error(`${sheetUrl} is not a valid EngineeringPaper.xyz sheet URL.`);
+          throw new Error(`${sheetUrl} is not a valid EngineeringPapyr sheet URL.`);
         }
       } catch(error) {
         modalInfo = {
           state: "error",
-          error: `<p>Error inserting sheet "${sheetUrl ? sheetUrl : 'empty URL'}". The URL is not valid EngineeringPaper.xyz sheet.`,
+          error: `<p>Error inserting sheet "${sheetUrl ? sheetUrl : 'empty URL'}". The URL is not valid EngineeringPapyr sheet.`,
           modalOpen: true,
           heading: "Retrieving Sheet"
         };
@@ -1743,10 +1680,9 @@ Please include a link to this sheet in the email to assist in debugging the prob
       modalInfo = {
         state: "error",
         error: `<p>Error inserting sheet ${sheetUrl}.
-This is most likely due to a bug in EngineeringPaper.xyz.
+This is most likely due to a bug in EngineeringPapyr.
 If problem persists after attempting to refresh the page, please report problem to
-<a href="mailto:support@engineeringpaper.xyz?subject=Error Regenerating Sheet&body=Sheet that failed to load: ${encodeURIComponent(sheetUrl)}">support@engineeringpaper.xyz</a>.  
-Please include a link to this sheet in the email to assist in debugging the problem. <br>${error} </p>`,
+<a href="https://github.com/animagr/EngineeringPapyr/issues" target="_blank">GitHub Issues</a>. <br>${error} </p>`,
         modalOpen: true,
         heading: "Retrieving Sheet"
       };
@@ -2006,7 +1942,7 @@ Please include a link to this sheet in the email to assist in debugging the prob
 
       const sheetUrl = await uploadSheet(false);
       if (sheetUrl) {
-        markdown += `A live version of this calculation is available at [EngineeringPaper.xyz](${sheetUrl}).\n\n`;
+        markdown += `A live version of this calculation is available at [EngineeringPapyr](${sheetUrl}).\n\n`;
       } else {
         markdown += `An error occurred generating a shareable link for this document.\n\n`;
       }
@@ -2023,7 +1959,7 @@ Please include a link to this sheet in the email to assist in debugging the prob
                               getShareableLink: boolean,
                               centerEquations: boolean,
                               paperSize: "a4" | "letter"}) {
-    const markDown = "<!-- Created with EngineeringPaper.xyz -->\n" + 
+    const markDown = "<!-- Created with EngineeringPapyr -->\n" + 
                      await getMarkdown(settings.getShareableLink, settings.centerEquations);
     const upload_blob = new Blob([markDown], {type: "text/markdown"});
 
@@ -2037,11 +1973,29 @@ Please include a link to this sheet in the email to assist in debugging the prob
       try {
         const { generateDocx } = await import("./docxExport");
         const docxBlob = await generateDocx(markDown, appState.title, settings.paperSize);
-        saveFileBlob(docxBlob, `${appState.title}.docx`);
+
+        if (window.showSaveFilePicker) {
+          const handle = await window.showSaveFilePicker({
+            suggestedName: `${appState.title}.docx`,
+            types: [{
+              description: "Word Document",
+              accept: { "application/vnd.openxmlformats-officedocument.wordprocessingml.document": [".docx"] },
+            }],
+          });
+          const writable = await handle.createWritable();
+          await writable.write(docxBlob);
+          await writable.close();
+        } else {
+          saveFileBlob(docxBlob, `${appState.title}.docx`);
+        }
         modalInfo.modalOpen = false;
       } catch (error) {
-        console.log(`Error creating docx document: ${error}`);
-        modalInfo = {state: "error", error, modalOpen: true, heading: modalInfo.heading};
+        if (error instanceof DOMException && error.name === "AbortError") {
+          modalInfo.modalOpen = false;
+        } else {
+          console.log(`Error creating docx document: ${error}`);
+          modalInfo = {state: "error", error, modalOpen: true, heading: modalInfo.heading};
+        }
       }
       return;
     }
@@ -2223,7 +2177,7 @@ Please include a link to this sheet in the email to assist in debugging the prob
   }
 
   $effect(() => {
-    document.title = `EngineeringPaper.xyz: ${appState.title}`;
+    document.title = `EngineeringPapyr: ${appState.title}`;
   });
 
 </script>
@@ -2567,7 +2521,7 @@ Please include a link to this sheet in the email to assist in debugging the prob
       slot="platform"
       onclick={() => appState.activeCell = -1}
     >
-      <img class="logo" src="logo_dark.svg" alt="EngineeringPaper.xyz">
+      <img class="logo" src="logo_dark.svg" alt="EngineeringPapyr">
     </span>
     
     {#if serviceWorkerUpdateWaiting}
@@ -2789,10 +2743,6 @@ Please include a link to this sheet in the email to assist in debugging the prob
             {/each}
           </SideNavMenu>
         {/if}
-        <SideNavLink 
-          on:click={() => showTerms()}
-          text="Terms and Conditions"
-        />
         <SideNavLink
           on:click={() => modalInfo = {
               modalOpen: true,
@@ -2822,12 +2772,7 @@ Please include a link to this sheet in the email to assist in debugging the prob
           text=".xyz blocked? Try EPxyz.com"
         />
         <SideNavLink
-          href="https://blog.engineeringpaper.xyz"
-          text="Blog"
-          target="_blank"
-        />
-        <SideNavLink
-          href="https://github.com/mgreminger/EngineeringPaper.xyz"
+          href="https://github.com/animagr/EngineeringPapyr"
           text="GitHub Page"
           target="_blank"
         />
@@ -2873,7 +2818,7 @@ Please include a link to this sheet in the email to assist in debugging the prob
       />
 
       <div class="print-logo">
-        Created with: <img src="print_logo.png" alt="EngineeringPaper.xyz" height="26 px">
+        Created with: <img src="print_logo.png" alt="EngineeringPapyr" height="26 px">
       </div>
 
       <div class="bottom-spacer" class:inIframe></div>
@@ -2900,25 +2845,7 @@ Please include a link to this sheet in the email to assist in debugging the prob
     />
   </div>
 
-  {#if (termsAccepted < appState.termsVersion) && !inIframe}
-    <div
-      class="status-footer"
-      onmousedown={e=>e.preventDefault()}
-    >
-      <InformationFilled color="#0f62fe"/>
-      <div>
-        Use of this software is subject to these  
-        <button
-          class="link"
-          onclick={showTerms}
-        >
-          Terms and Conditions
-        </button>  (updated {versionToDateString(appState.termsVersion)})
-      </div>
-      <button onclick={acceptTerms}>Accept</button>
-    </div>
-  {:else}
-    {#if noParsingErrors || appState.parsePending}
+  {#if noParsingErrors || appState.parsePending}
       {#if (inDebounce || appState.parsePending) && pythonReady}
         <div class="status-footer">
           <InlineLoading status="inactive" description="Updating..."/>
@@ -2968,7 +2895,6 @@ Please include a link to this sheet in the email to assist in debugging the prob
         </div>
         <button onclick={showSyntaxError}>Show Error</button>
       </div>
-    {/if}
   {/if}
 
   {#if !inIframe && showKeyboard}
@@ -3087,7 +3013,7 @@ Please include a link to this sheet in the email to assist in debugging the prob
         on:open
         on:close
         on:submit={() => uploadSheet()}
-        hasScrollingContent={["supportedUnits", "termsAndConditions",
+        hasScrollingContent={["supportedUnits",
                               "newVersion", "keyboardShortcuts", "generateCode"].includes(modalInfo.state)}
         preventCloseOnClickOutside={!["supportedUnits", "bugReport", "tryEpxyz", "newVersion", "updateAvailable", 
                                       "keyboardShortcuts"].includes(modalInfo.state)}
@@ -3119,23 +3045,23 @@ Please include a link to this sheet in the email to assist in debugging the prob
         {:else if modalInfo.state === "restoring"}
           <InlineLoading description={`Restoring autosave checkpoint: ${window.location}`}/>
         {:else if modalInfo.state === "bugReport"}
-          <p>If you have discovered a bug in EngineeringPaper.xyz, 
-            please send a bug report to 
-            <a href={`mailto:support@engineeringpaper.xyz?subject=Bug Report&body=Sheet with issues: ${encodeURIComponent(window.location.href)}`}>support@engineeringpaper.xyz</a>.
-            Please include a description of the problem. Additionally, it's best if you can include a link to the sheet that is experiencing the problem.
+          <p>If you have discovered a bug in EngineeringPapyr,
+            please report it at
+            <a href="https://github.com/animagr/EngineeringPapyr/issues" target="_blank">GitHub Issues</a>.
+            Please include a description of the problem.
           </p>
         {:else if modalInfo.state === "tryEpxyz"}
           <p>
             Some environments indiscriminately block all <em>.xyz</em> domains. For example,
             some school districts block all <em>.xyz</em> domains for their school issued 
-            Chromebooks. Since it's important to us that all of the EngineeringPaper.xyz
-            goodness is available to everyone, the full functionality of EngineeringPaper.xyz 
+            Chromebooks. Since it's important to us that all of the EngineeringPapyr
+            goodness is available to everyone, the full functionality of EngineeringPapyr 
             is now also available as a <em>.com</em> address at
             <a href="EPxyz.com" target="_blank">EPxyz.com</a>. The functionality is the same
             between the two domains and sheets saved on one can be opened on the other. 
             Shareable links are interchangeable as well. For example, 
-            <a href="https://engineeringpaper.xyz/fFjTsnFoSQMLwcvteVoNtL" target="_blank">
-              https://engineeringpaper.xyz/fFjTsnFoSQMLwcvteVoNtL</a> and 
+            <a href="https://github.com/animagr/EngineeringPapyr/fFjTsnFoSQMLwcvteVoNtL" target="_blank">
+              https://github.com/animagr/EngineeringPapyr/fFjTsnFoSQMLwcvteVoNtL</a> and 
             <a href="https://epxyz.com/fFjTsnFoSQMLwcvteVoNtL" target="_blank">
               https://epxyz.com/fFjTsnFoSQMLwcvteVoNtL</a> point to the same sheet.
           </p>
@@ -3143,8 +3069,6 @@ Please include a link to this sheet in the email to assist in debugging the prob
           <UnitsDocumentation />
         {:else if modalInfo.state === "keyboardShortcuts"}
           <KeyboardShortcuts />
-        {:else if modalInfo.state === "termsAndConditions"}
-          <Terms versionDateString={versionToDateString(appState.termsVersion)}/>
         {:else if modalInfo.state === "requestPersistentStorage"}
           <RequestPersistentStorage numCheckpoints={numCheckpoints} />
         {:else if modalInfo.state === "newVersion"}

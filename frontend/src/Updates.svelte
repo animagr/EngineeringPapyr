@@ -316,7 +316,7 @@
    This release has many behind the scenes changes that modernize the user interface libraries and code.
    Much effort has went into making sure that these changes do not introduce bugs, however, 
    if you do notice a bug, please report the 
-   bug to <a href="mailto:support@engineeringpaper.xyz">support@engineeringpaper.xyz</a>
+   bug at <a href="https://github.com/animagr/EngineeringPapyr/issues" target="_blank">GitHub Issues</a>.
    In the meantime, you may use the previous release's permalink (see below) until the bug is fixed.
 </p>
 
@@ -337,7 +337,7 @@
    Significant testing has gone into ensuring that this change does not introduce bugs. One change you may notice is that dimensions
    were sometimes lost in the past for dimensioned values that had zero magnitude. This should no longer happen 
    but may lead to dimension errors for sheets that relied on the old behaviour. If you do notice a bug, please report the 
-   bug to <a href="mailto:support@engineeringpaper.xyz">support@engineeringpaper.xyz</a>
+   bug at <a href="https://github.com/animagr/EngineeringPapyr/issues" target="_blank">GitHub Issues</a>.
    In the meantime, you may use the previous release's permalink (see below) until the bug is fixed.
 </p>
 
@@ -356,7 +356,7 @@
    you to avoid updates until you're ready. Additionally, in the event that a new version introduces 
    a bug that is impacting your sheet, going back to a previous permalink will allow you to open your <em>.epxyz</em> 
    file and keep working. Of course, if this happens, please report the bug to 
-   <a href="mailto:support@engineeringpaper.xyz" target="_blank">support@engineeringpaper.xyz</a> so that we can 
+   <a href="https://github.com/animagr/EngineeringPapyr/issues" target="_blank">GitHub Issues</a> so that we can
    get it fixed. A lot of effort is put into ensuring that new versions don't introduce bugs. However, 
    a bug is always possible and ensuring that you're able to work with your existing sheets is a top 
    priority.
@@ -892,11 +892,9 @@
 <p>
    Extensive testing has been done to ensure that your existing sheets will 
    still work without needing any updates. If you do run into issues with 
-   your existing sheets, this is a bug and should be reported to 
-   <a href="mailto:support@engineeringpaper.xyz">support@engineeringpaper.xyz</a>, 
-   submitted as an issue on the 
-   <a href="https://github.com/mgreminger/EngineeringPaper.xyz/issues" target="_blank">GitHub issues page</a>,
-   or reported on the
+   your existing sheets, this is a bug and should be reported at
+   <a href="https://github.com/animagr/EngineeringPapyr/issues" target="_blank">GitHub Issues</a>
+   or on the
    <a href="https://www.reddit.com/r/EngineeringPaperXYZ/" target="_blank">Reddit community page</a>. 
    In the case that you are having a issue opening an existing sheet or working with the math 
    editor, the previous version of EngineeringPaper.xyz will remain available at 
@@ -969,7 +967,7 @@
    <a href="https://github.com/mgreminger/EngineeringPaper.xyz/issues">GitHub issues page</a>, 
    you can add a post to EngineeringPaper.xyz's 
    <a href="https://www.reddit.com/r/EngineeringPaperXYZ/">Reddit community page</a>, or you
-   can send a email to <a href="mailto:support@engineeringpaper.xyz">support@engineeringpaper.xyz</a>.
+   can open an issue on <a href="https://github.com/animagr/EngineeringPapyr/issues" target="_blank">GitHub Issues</a>.
    Also, if you would like to share any of the sheets you are creating with 
    EngineeringPaper.xyz, the  <a href="https://www.reddit.com/r/EngineeringPaperXYZ/">Reddit community page</a> is a great 
    place to share and start a discussion.

@@ -19,7 +19,6 @@ export type CodeContextResult = {
 export class JediWrapper {
   async getCodeContextResult(request: {
     codeContextRequest: CodeContextRequest;
-    neededPyodidePackages: string[];
   }): Promise<CodeContextResult> {
     try {
       const resultStr: string = await (window as any).pywebview.api.get_code_context(

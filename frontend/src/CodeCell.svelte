@@ -9,8 +9,6 @@
   import MathField from "./MathField.svelte";
   import IconButton from "./IconButton.svelte";
 
-  import pyodideInfo from "./pyodide-info.json";
-
   import { TooltipIcon } from "carbon-components-svelte";
 
   import Error from "carbon-icons-svelte/lib/Error.svelte";
@@ -39,6 +37,7 @@
   let containerDiv: HTMLDivElement;
 
   let CodeEditor: typeof import("./CodeEditor.svelte").default = $state();
+  let pythonInfo: {pythonVersion: string, packages: Record<string, string>} | null = $state(null);
 
   let codeCellResult = $derived.by(() => {
     let result: CodeCellResult | null = null;
@@ -51,11 +50,16 @@
   let stdout = $derived(codeCellResult ? codeCellResult.stdout : "");
 
   onMount(async () => {
-    codeCell.updateNeededPyodidePackages();
     CodeEditor = (await import("./CodeEditor.svelte")).default;
     await tick();
     if (appState.activeCell === index) {
       focus();
+    }
+    try {
+      const infoStr: string = await (window as any).pywebview.api.get_python_info();
+      pythonInfo = JSON.parse(infoStr);
+    } catch (e) {
+      console.warn('Failed to fetch Python info:', e);
     }
   });
 
@@ -71,7 +75,6 @@
 
 	function handleCodeEditorUpdate(data: {code: string}) {
 		codeCell.code = data.code;
-    codeCell.updateNeededPyodidePackages();
 
     triggerSaveNeeded(true);
     mathCellChanged();
@@ -200,13 +203,16 @@
       <TooltipIcon direction="left">
         <div class="tooltip" slot="tooltipText">
           <h6>Python Environment</h6>
-          <div class="tooltip-row"><span>Python</span><em>{pyodideInfo.pythonVersion}</em></div>
-          <div class="tooltip-row"><span>Pyodide</span><em>{pyodideInfo.pyodideVersion}</em></div>
-          <br>
-          <h6>Available Python Modules</h6>
-          {#each Object.entries(pyodideInfo.availablePackages).sort((a, b) => a[0].toLowerCase().localeCompare(b[0].toLowerCase())) as [key, value]}
-            <div class="tooltip-row"><span>{key}</span><em>{value.version}</em></div>
-          {/each}
+          {#if pythonInfo}
+            <div class="tooltip-row"><span>Python</span><em>{pythonInfo.pythonVersion}</em></div>
+            <br>
+            <h6>Installed Packages</h6>
+            {#each Object.entries(pythonInfo.packages).sort((a, b) => a[0].toLowerCase().localeCompare(b[0].toLowerCase())) as [name, version]}
+              <div class="tooltip-row"><span>{name}</span><em>{version}</em></div>
+            {/each}
+          {:else}
+            <div>Loading...</div>
+          {/if}
         </div>
         <Information />
       </TooltipIcon>

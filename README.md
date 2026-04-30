@@ -1,6 +1,6 @@
 # EngineeringPapyr — Native Desktop Edition
 
-A native Windows desktop build of [EngineeringPaper.xyz](https://engineeringpaper.xyz) using **PyWebView** + **native Python** instead of Pyodide/WebAssembly. Calculations run via native CPython with SymPy — faster startup, faster computation (3-5x faster), and a smaller footprint (~330 MB to ~120 MB).
+A native Windows desktop build of [EngineeringPaper.xyz](https://engineeringpaper.xyz) using **PyWebView** + **native Python** instead of Pyodide/WebAssembly. Calculations run via native CPython with SymPy — faster startup, faster computation (3-5x faster), and a smaller footprint.
 
 ---
 
@@ -29,7 +29,7 @@ EngineeringPapyr replaces that entire stack:
 | Code completion | Jedi via Pyodide Worker | Jedi via native Python |
 | Packaging | Node.js exe via pkg | Python exe via PyInstaller |
 
-All features are preserved: math cells, documentation cells, system solve cells, EVA/RSS analysis cells, code cells, plot cells, fluid cells, data tables, DOCX export (pandoc-wasm), and PDF export (print dialog).
+All features are preserved: math cells, documentation cells, system solve cells, EVA/RSS analysis cells, code cells, plot cells, fluid cells, data tables, DOCX export (native pandoc via pypandoc), and PDF export (print dialog). Code cells can import any pip-installed Python package.
 
 ---
 
@@ -76,9 +76,9 @@ Statistical tolerance analysis cell that computes the RSS error envelope. Unlike
 
 ### 1. Install Python dependencies
 
-```bash
+```Powershell
 cd C:\Claude\EngPaper\EngineeringPapyr
-py -3.10 -m pip install -r requirements.txt
+py -3.12 -m pip install -r requirements.txt
 ```
 
 ### 2. Build the frontend
@@ -90,21 +90,29 @@ cd C:\Claude\EngPaper\EngineeringPapyr\frontend
 npm install
 npm run build:native
 ```
+If you get a `cross-env` not found error: `npm install cross-env`
 
 Output goes to `frontend/public/`.
 
-### 3. Run the app
+To clean build artifacts before rebuilding:
 
 ```bash
+cd C:\Claude\EngPaper\EngineeringPapyr\frontend
+rm -rf public/build
+```
+
+### 3. Run the app
+
+```Powershell
 cd C:\Claude\EngPaper\EngineeringPapyr
-py -3.10 python/main.py
+py -3.12 python/main.py
 ```
 
 ### 4. Package as .exe
 
-```bash
+```Powershell
 cd C:\Claude\EngPaper\EngineeringPapyr
-py -3.10 build.py
+py -3.12 build.py
 ```
 
 Output: `dist/EngineeringPapyr.exe`
@@ -116,7 +124,7 @@ Output: `dist/EngineeringPapyr.exe`
 For iterating on frontend changes:
 
 - **Terminal 1:** `cd frontend && npm run dev:native` (watches + rebuilds on save)
-- **Terminal 2:** `cd .. && py -3.10 python/main.py` (launch app, restart manually after frontend rebuild)
+- **Terminal 2:** `cd .. && py -3.12 python/main.py` (launch app, restart manually after frontend rebuild)
 
 ---
 
@@ -127,11 +135,14 @@ PyWebView window (Edge WebView2)
   |
   |-- Loads Svelte frontend from local files (frontend/public/)
   |-- JS calls window.pywebview.api.solve_sheet(json)
+  |-- JS calls window.pywebview.api.export_docx(json)
   |
   v
 Native Python (python/api.py)
   |-- solve_sheet()  ->  dimensional_analysis.py (SymPy)
   |-- get_code_context()  ->  jedi_code_analysis.py (Jedi)
+  |-- export_docx()  ->  pypandoc (native pandoc)
+  |-- get_python_info()  ->  importlib.metadata
   |-- LRU cache (100 entries, replaces QuickLRU in JS)
 ```
 
@@ -142,7 +153,7 @@ The JS-Python boundary is 100% JSON strings in both directions. PyWebView runs A
 | File | Purpose |
 |------|---------|
 | `python/main.py` | PyWebView entry point, creates window |
-| `python/api.py` | JS API bridge (solve_sheet, get_code_context) |
+| `python/api.py` | JS API bridge (solve_sheet, get_code_context, export_docx, get_python_info) |
 | `python/dimensional_analysis.py` | Core computation engine (SymPy, ~4800 lines) |
 | `python/jedi_code_analysis.py` | Code cell autocomplete via Jedi |
 | `frontend/src/App.svelte` | Main app (calls `window.pywebview.api` instead of Web Workers) |

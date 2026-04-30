@@ -6,6 +6,8 @@ import webview
 
 from api import Api
 
+__version__ = '1.0.0'
+
 
 def get_public_path() -> Path:
     if getattr(sys, 'frozen', False):
@@ -27,7 +29,7 @@ def main():
     api = Api()
 
     window = webview.create_window(
-        'EngineeringPapyr',
+        f'EngineeringPapyr v{__version__}',
         url=index_html,
         js_api=api,
         width=1280,

@@ -142,7 +142,6 @@
 
     const codeContextResult = await jediWrapper.getCodeContextResult({
       codeContextRequest,
-      neededPyodidePackages: [...codeCell.neededPyodidePackages]
     });
     
     if (codeContextResult.autocompleteSuggestions.length === 0) {
@@ -179,7 +178,6 @@
 
     const codeContextResult = await jediWrapper.getCodeContextResult({
       codeContextRequest,
-      neededPyodidePackages: [...codeCell.neededPyodidePackages]
     });
 
     if (!codeContextResult.hoverText) {

@@ -68,12 +68,12 @@
       required={true}
       bind:selected={docType}
     >
-      <RadioButton labelText="Native EngineeringPaper.xyz .epxyz Sheet File (no data leaves your computer)" value="epxyz"/>
+      <RadioButton labelText="Native EngineeringPapyr .epxyz Sheet File (no data leaves your computer)" value="epxyz"/>
       <RadioButton labelText="Markdown File (no data leaves your computer)" value="md" />
-      <RadioButton labelText={__STANDALONE__ ? "Microsoft Word .docx File (generated locally, no data leaves your computer)" : "Microsoft Word .docx File (processed on the EngineeringPaper.xyz server, no data is retained on the server)"} value="docx" />
-      <RadioButton labelText={__STANDALONE__ ? "PDF File (uses browser print dialog, no data leaves your computer)" : "PDF File (processed on the EngineeringPaper.xyz server, no data is retained on the server)"} value="pdf" />
+      <RadioButton labelText={__STANDALONE__ ? "Microsoft Word .docx File (generated locally, no data leaves your computer)" : "Microsoft Word .docx File (processed on the EngineeringPapyr server, no data is retained on the server)"} value="docx" />
+      <RadioButton labelText={__STANDALONE__ ? "PDF File (uses browser print dialog, no data leaves your computer)" : "PDF File (processed on the EngineeringPapyr server, no data is retained on the server)"} value="pdf" />
       {#if !__STANDALONE__}
-      <RadioButton labelText="LaTeX File (images and plots are not included, processed on the EngineeringPaper.xyz server, no data is retained on the server)" value="tex" />
+      <RadioButton labelText="LaTeX File (images and plots are not included, processed on the EngineeringPapyr server, no data is retained on the server)" value="tex" />
       {/if}
     </RadioButtonGroup>
     {#if window.showSaveFilePicker}
