@@ -5,6 +5,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.3] - 2026-04-30
+
+### Changed
+
+- EVA (Extreme Value Analysis) now uses `lambdify` to evaluate all 2^n parameter combinations via fast numeric functions instead of repeated SymPy `evalf()` calls. Falls back to the original method if lambdify fails.
+- RSS tolerance analysis delta evaluations now use `lambdify` for the same speedup. Nominal evaluation still uses the full SymPy path for proper unit/dimensional analysis results.
+- Maximum parameters for EVA and RSS cells increased from 20 to 25.
+- App header logo changed from SVG to PNG (`print_logo.png`).
+- App header background color changed to pure black.
+
 ## [1.0.2] - 2026-04-30
 
 ### Fixed
@@ -76,7 +86,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Pyodide/WASM dependency.
 - Cloudflare Pages Functions backend.
 
-[unreleased]: https://github.com/animagr/EngineeringPapyr/compare/v1.0.2...HEAD
+[unreleased]: https://github.com/animagr/EngineeringPapyr/compare/v1.0.3...HEAD
+[1.0.3]: https://github.com/animagr/EngineeringPapyr/compare/v1.0.2...v1.0.3
 [1.0.2]: https://github.com/animagr/EngineeringPapyr/compare/v1.0.1...v1.0.2
 [1.0.1]: https://github.com/animagr/EngineeringPapyr/compare/v1.0.0...v1.0.1
 [1.0.0]: https://github.com/animagr/EngineeringPapyr/releases/tag/v1.0.0

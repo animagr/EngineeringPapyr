@@ -4112,110 +4112,185 @@ def evaluate_statements(statements: list[InputAndSystemStatement],
                     ev_dim_subs[override_sym] = dim_expr
 
             n = len(param_overrides)
-            best_min_val = float('inf')
-            best_max_val = float('-inf')
             min_result = None
             max_result = None
+            sensitivity_list: list[SensitivityEntry] = []
 
-            # Calculate midpoint values for sensitivity analysis
-            param_midpoints = [(sym, (min_val + max_val) / 2, min_val, max_val) for sym, min_val, max_val in param_overrides]
+            # Try fast lambdify path: resolve expression once, then evaluate
+            # all 2^n combinations numerically without repeated SymPy evalf calls
+            _eva_fast = False
+            try:
+                import numpy as np
 
-            for combo in itertools_product([False, True], repeat=n):
-                trial_subs = dict(parameter_subs)
-                # Override EVA parameter variable symbols with min/max values
-                for use_max, (sym, min_val, max_val) in zip(combo, param_overrides):
-                    trial_subs[sym] = max_val if use_max else min_val
+                ev_param_syms = {sym for sym, _, _ in param_overrides}
+                ev_base_subs = {k: v for k, v in parameter_subs.items() if k not in ev_param_syms}
 
-                try:
-                    eval_result, sym_result, dim_result, dim_sub_error = get_evaluated_expression(
-                        query_expression,
-                        not convert_floats_to_fractions,
-                        trial_subs,
-                        ev_dim_subs,
-                        placeholder_map,
-                        placeholder_set,
-                        {},  # fresh expression_cache for each combo
-                        variable_name_map
-                    )
+                resolved_expr, _, _ = replace_placeholder_funcs(
+                    not convert_floats_to_fractions, query_expression, None, False,
+                    ev_base_subs, ev_dim_subs, placeholder_map, placeholder_set,
+                    {}, DataTableSubs()
+                )
 
-                    if is_matrix(eval_result):
-                        continue  # skip matrix results for EVA
+                ev_sym_list = [sym for sym, _, _ in param_overrides]
+                fast_func = lambdify(ev_sym_list, resolved_expr, modules=["numpy", "math", "sympy"])
 
-                    trial_result = get_result(
-                        eval_result, dim_result,
-                        simplify_symbolic_expressions,
-                        dim_sub_error, cast(Expr, sym_result),
-                        False,  # isRange
-                        custom_base_units,
-                        False,  # isSubQuery
-                        "",     # subQueryName
-                        variable_name_map
-                    )
+                min_floats = [float(min_val.evalf()) for _, min_val, _ in param_overrides]
+                max_floats = [float(max_val.evalf()) for _, _, max_val in param_overrides]
 
-                    if trial_result.get("numeric", False) and trial_result.get("finite", False):
-                        try:
-                            val = float(trial_result["value"])
-                            if val < best_min_val:
-                                best_min_val = val
+                best_min_val = float('inf')
+                best_max_val = float('-inf')
+                min_combo_vals = None
+                max_combo_vals = None
+
+                for combo_vals in itertools_product(*zip(min_floats, max_floats)):
+                    val = float(fast_func(*combo_vals))
+                    if math.isfinite(val) and not math.isnan(val):
+                        if val < best_min_val:
+                            best_min_val = val
+                            min_combo_vals = combo_vals
+                        if val > best_max_val:
+                            best_max_val = val
+                            max_combo_vals = combo_vals
+
+                if min_combo_vals is not None and max_combo_vals is not None:
+                    for combo_vals, is_min in [(min_combo_vals, True), (max_combo_vals, False)]:
+                        trial_subs = dict(parameter_subs)
+                        for sym, val in zip(ev_sym_list, combo_vals):
+                            trial_subs[sym] = sympify(val)
+
+                        eval_result, sym_result, dim_result, dim_sub_error = get_evaluated_expression(
+                            query_expression, not convert_floats_to_fractions,
+                            trial_subs, ev_dim_subs, placeholder_map, placeholder_set,
+                            {}, variable_name_map
+                        )
+
+                        if not is_matrix(eval_result):
+                            trial_result = get_result(
+                                eval_result, dim_result, simplify_symbolic_expressions,
+                                dim_sub_error, cast(Expr, sym_result),
+                                False, custom_base_units, False, "", variable_name_map
+                            )
+                            if is_min:
                                 min_result = trial_result
-                            if val > best_max_val:
-                                best_max_val = val
+                            else:
                                 max_result = trial_result
-                        except (ValueError, TypeError):
-                            pass
-                except Exception:
-                    continue
+
+                    mid_floats = [(mn + mx) / 2 for mn, mx in zip(min_floats, max_floats)]
+                    for i in range(n):
+                        args = list(mid_floats)
+                        args[i] = min_floats[i]
+                        try:
+                            v_min = float(fast_func(*args))
+                        except Exception:
+                            v_min = None
+                        args[i] = max_floats[i]
+                        try:
+                            v_max = float(fast_func(*args))
+                        except Exception:
+                            v_max = None
+
+                        if v_min is not None and v_max is not None:
+                            sensitivity_list.append(SensitivityEntry(
+                                paramName=str(ev_sym_list[i]),
+                                contribution=abs(v_max - v_min),
+                                percentage=0.0
+                            ))
+
+                    total_contribution = sum(e["contribution"] for e in sensitivity_list)
+                    if total_contribution > 0:
+                        for entry in sensitivity_list:
+                            entry["percentage"] = (entry["contribution"] / total_contribution) * 100
+                    sensitivity_list.sort(key=lambda e: e["contribution"], reverse=True)
+
+                _eva_fast = True
+            except Exception:
+                min_result = None
+                max_result = None
+                sensitivity_list = []
+
+            if not _eva_fast:
+                # Fallback: evaluate all 2^n combinations with full SymPy evalf
+                best_min_val = float('inf')
+                best_max_val = float('-inf')
+                param_midpoints = [(sym, (min_val + max_val) / 2, min_val, max_val) for sym, min_val, max_val in param_overrides]
+
+                for combo in itertools_product([False, True], repeat=n):
+                    trial_subs = dict(parameter_subs)
+                    for use_max, (sym, min_val, max_val) in zip(combo, param_overrides):
+                        trial_subs[sym] = max_val if use_max else min_val
+
+                    try:
+                        eval_result, sym_result, dim_result, dim_sub_error = get_evaluated_expression(
+                            query_expression, not convert_floats_to_fractions,
+                            trial_subs, ev_dim_subs, placeholder_map, placeholder_set,
+                            {}, variable_name_map
+                        )
+
+                        if is_matrix(eval_result):
+                            continue
+
+                        trial_result = get_result(
+                            eval_result, dim_result, simplify_symbolic_expressions,
+                            dim_sub_error, cast(Expr, sym_result),
+                            False, custom_base_units, False, "", variable_name_map
+                        )
+
+                        if trial_result.get("numeric", False) and trial_result.get("finite", False):
+                            try:
+                                val = float(trial_result["value"])
+                                if val < best_min_val:
+                                    best_min_val = val
+                                    min_result = trial_result
+                                if val > best_max_val:
+                                    best_max_val = val
+                                    max_result = trial_result
+                            except (ValueError, TypeError):
+                                pass
+                    except Exception:
+                        continue
+
+                if min_result is not None and max_result is not None:
+                    for i, (sym, mid_val, min_val, max_val) in enumerate(param_midpoints):
+                        base_subs = dict(parameter_subs)
+                        for j, (s, m, _, _) in enumerate(param_midpoints):
+                            base_subs[s] = m
+
+                        base_subs[sym] = min_val
+                        try:
+                            eval_at_min, _, _, _ = get_evaluated_expression(
+                                query_expression, not convert_floats_to_fractions,
+                                base_subs, ev_dim_subs, placeholder_map, placeholder_set,
+                                {}, variable_name_map
+                            )
+                            val_at_min = float(eval_at_min.evalf(PRECISION)) if not is_matrix(eval_at_min) else None
+                        except Exception:
+                            val_at_min = None
+
+                        base_subs[sym] = max_val
+                        try:
+                            eval_at_max, _, _, _ = get_evaluated_expression(
+                                query_expression, not convert_floats_to_fractions,
+                                base_subs, ev_dim_subs, placeholder_map, placeholder_set,
+                                {}, variable_name_map
+                            )
+                            val_at_max = float(eval_at_max.evalf(PRECISION)) if not is_matrix(eval_at_max) else None
+                        except Exception:
+                            val_at_max = None
+
+                        if val_at_min is not None and val_at_max is not None:
+                            sensitivity_list.append(SensitivityEntry(
+                                paramName=str(sym),
+                                contribution=abs(val_at_max - val_at_min),
+                                percentage=0.0
+                            ))
+
+                    total_contribution = sum(e["contribution"] for e in sensitivity_list)
+                    if total_contribution > 0:
+                        for entry in sensitivity_list:
+                            entry["percentage"] = (entry["contribution"] / total_contribution) * 100
+                    sensitivity_list.sort(key=lambda e: e["contribution"], reverse=True)
 
             if min_result is not None and max_result is not None:
-                # Calculate sensitivity: contribution of each parameter to output variation
-                # For each parameter, vary it min->max while holding others at midpoint
-                sensitivity_list: list[SensitivityEntry] = []
-
-                for i, (sym, mid_val, min_val, max_val) in enumerate(param_midpoints):
-                    # Build subs with all params at midpoint
-                    base_subs = dict(parameter_subs)
-                    for j, (s, m, _, _) in enumerate(param_midpoints):
-                        base_subs[s] = m
-
-                    # Evaluate at param min
-                    base_subs[sym] = min_val
-                    try:
-                        eval_at_min, _, _, _ = get_evaluated_expression(
-                            query_expression, not convert_floats_to_fractions,
-                            base_subs, ev_dim_subs, placeholder_map, placeholder_set,
-                            {}, variable_name_map
-                        )
-                        val_at_min = float(eval_at_min.evalf(PRECISION)) if not is_matrix(eval_at_min) else None
-                    except:
-                        val_at_min = None
-
-                    # Evaluate at param max
-                    base_subs[sym] = max_val
-                    try:
-                        eval_at_max, _, _, _ = get_evaluated_expression(
-                            query_expression, not convert_floats_to_fractions,
-                            base_subs, ev_dim_subs, placeholder_map, placeholder_set,
-                            {}, variable_name_map
-                        )
-                        val_at_max = float(eval_at_max.evalf(PRECISION)) if not is_matrix(eval_at_max) else None
-                    except:
-                        val_at_max = None
-
-                    if val_at_min is not None and val_at_max is not None:
-                        contribution = abs(val_at_max - val_at_min)
-                        sensitivity_list.append(SensitivityEntry(
-                            paramName=str(sym),
-                            contribution=contribution,
-                            percentage=0.0  # will calculate after we have total
-                        ))
-
-                # Calculate percentages and sort by contribution (descending)
-                total_contribution = sum(e["contribution"] for e in sensitivity_list)
-                if total_contribution > 0:
-                    for entry in sensitivity_list:
-                        entry["percentage"] = (entry["contribution"] / total_contribution) * 100
-                sensitivity_list.sort(key=lambda e: e["contribution"], reverse=True)
-
                 results_with_ranges[query_index] = ExtremeValueResult(
                     extremeValueResult=True,
                     nominalResult=cast(Result | FiniteImagResult, nominal_result),
@@ -4395,40 +4470,94 @@ def evaluate_statements(statements: list[InputAndSystemStatement],
             deltas: list[tuple[str, float, float]] = []  # (name, delta_i, abs_delta)
             rss_eval_error = None
 
-            for i, (sym, min_val, nom_val, max_val) in enumerate(param_overrides):
-                trial_subs_min = dict(nominal_subs)
-                trial_subs_min[sym] = min_val
-                try:
-                    eval_at_min, _, _, _ = get_evaluated_expression(
-                        query_expression, not convert_floats_to_fractions,
-                        trial_subs_min, rss_dim_subs, placeholder_map, placeholder_set,
-                        {}, variable_name_map
-                    )
-                    val_at_min = float(eval_at_min.evalf(PRECISION)) if not is_matrix(eval_at_min) else None
-                except:
-                    val_at_min = None
+            # Try fast lambdify path for delta evaluations
+            _rss_fast = False
+            try:
+                import numpy as np
 
-                trial_subs_max = dict(nominal_subs)
-                trial_subs_max[sym] = max_val
-                try:
-                    eval_at_max, _, _, _ = get_evaluated_expression(
-                        query_expression, not convert_floats_to_fractions,
-                        trial_subs_max, rss_dim_subs, placeholder_map, placeholder_set,
-                        {}, variable_name_map
-                    )
-                    val_at_max = float(eval_at_max.evalf(PRECISION)) if not is_matrix(eval_at_max) else None
-                except:
-                    val_at_max = None
+                rss_param_syms = {sym for sym, _, _, _ in param_overrides}
+                rss_base_subs = {k: v for k, v in parameter_subs.items() if k not in rss_param_syms}
 
-                if val_at_min is None or val_at_max is None:
-                    rss_eval_error = f"Could not evaluate query for parameter '{sym}'"
-                    break
+                rss_resolved_expr, _, _ = replace_placeholder_funcs(
+                    not convert_floats_to_fractions, query_expression, None, False,
+                    rss_base_subs, rss_dim_subs, placeholder_map, placeholder_set,
+                    {}, DataTableSubs()
+                )
 
-                delta_from_min = abs(val_at_min - nominal_numeric)
-                delta_from_max = abs(val_at_max - nominal_numeric)
-                delta_i = max(delta_from_min, delta_from_max)
-                abs_delta = abs(val_at_max - val_at_min)
-                deltas.append((str(sym), delta_i, abs_delta))
+                rss_sym_list = [sym for sym, _, _, _ in param_overrides]
+                rss_fast_func = lambdify(rss_sym_list, rss_resolved_expr, modules=["numpy", "math", "sympy"])
+
+                nom_floats = [float(nom_val.evalf()) for _, _, nom_val, _ in param_overrides]
+                min_floats = [float(min_val.evalf()) for _, min_val, _, _ in param_overrides]
+                max_floats = [float(max_val.evalf()) for _, _, _, max_val in param_overrides]
+
+                for i, (sym, min_val, nom_val, max_val) in enumerate(param_overrides):
+                    args_min = list(nom_floats)
+                    args_min[i] = min_floats[i]
+                    try:
+                        val_at_min = float(rss_fast_func(*args_min))
+                    except Exception:
+                        val_at_min = None
+
+                    args_max = list(nom_floats)
+                    args_max[i] = max_floats[i]
+                    try:
+                        val_at_max = float(rss_fast_func(*args_max))
+                    except Exception:
+                        val_at_max = None
+
+                    if val_at_min is None or val_at_max is None:
+                        rss_eval_error = f"Could not evaluate query for parameter '{sym}'"
+                        break
+
+                    delta_from_min = abs(val_at_min - nominal_numeric)
+                    delta_from_max = abs(val_at_max - nominal_numeric)
+                    delta_i = max(delta_from_min, delta_from_max)
+                    abs_delta = abs(val_at_max - val_at_min)
+                    deltas.append((str(sym), delta_i, abs_delta))
+
+                _rss_fast = True
+            except Exception:
+                if not _rss_fast:
+                    deltas = []
+                    rss_eval_error = None
+
+            if not _rss_fast:
+                # Fallback: evaluate deltas with full SymPy evalf
+                for i, (sym, min_val, nom_val, max_val) in enumerate(param_overrides):
+                    trial_subs_min = dict(nominal_subs)
+                    trial_subs_min[sym] = min_val
+                    try:
+                        eval_at_min, _, _, _ = get_evaluated_expression(
+                            query_expression, not convert_floats_to_fractions,
+                            trial_subs_min, rss_dim_subs, placeholder_map, placeholder_set,
+                            {}, variable_name_map
+                        )
+                        val_at_min = float(eval_at_min.evalf(PRECISION)) if not is_matrix(eval_at_min) else None
+                    except Exception:
+                        val_at_min = None
+
+                    trial_subs_max = dict(nominal_subs)
+                    trial_subs_max[sym] = max_val
+                    try:
+                        eval_at_max, _, _, _ = get_evaluated_expression(
+                            query_expression, not convert_floats_to_fractions,
+                            trial_subs_max, rss_dim_subs, placeholder_map, placeholder_set,
+                            {}, variable_name_map
+                        )
+                        val_at_max = float(eval_at_max.evalf(PRECISION)) if not is_matrix(eval_at_max) else None
+                    except Exception:
+                        val_at_max = None
+
+                    if val_at_min is None or val_at_max is None:
+                        rss_eval_error = f"Could not evaluate query for parameter '{sym}'"
+                        break
+
+                    delta_from_min = abs(val_at_min - nominal_numeric)
+                    delta_from_max = abs(val_at_max - nominal_numeric)
+                    delta_i = max(delta_from_min, delta_from_max)
+                    abs_delta = abs(val_at_max - val_at_min)
+                    deltas.append((str(sym), delta_i, abs_delta))
 
             if rss_eval_error:
                 results_with_ranges[query_index] = RssResult(

@@ -3,7 +3,7 @@ import { MathField } from "./MathField.svelte";
 import type { Statement } from "../parser/types";
 import { defaultConfig, type NumberFormatOptions } from "../sheet/Sheet";
 
-const MAX_PARAMETERS = 20;
+const MAX_PARAMETERS = 25;
 
 export default class ExtremeValueCell extends BaseCell {
   parameterFields: MathField[] = $state();

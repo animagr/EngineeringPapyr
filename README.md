@@ -47,7 +47,7 @@ Math cells have an optional annotation column to the right for units description
 
 ### Extreme Value Analysis (EVA) Cell
 
-Finds worst-case min/max of an output expression by evaluating all 2^n combinations of input parameter bounds, plus sensitivity analysis.
+Finds worst-case min/max of an output expression by evaluating all 2^n combinations of input parameter bounds, plus sensitivity analysis. Supports up to 25 parameters (2^25 = 33,554,432 combinations) — made practical by using `lambdify` to convert SymPy expressions into fast NumPy functions, evaluating millions of combinations in seconds instead of hours.
 
 1. Define parameters on the sheet (e.g., `V = 10 [V]`, `R = 1000 [Ω]`, `I = V / R =`)
 2. Insert an EVA cell
