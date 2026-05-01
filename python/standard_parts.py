@@ -11,14 +11,10 @@ Usage in a code cell:
 """
 
 import csv
-import sys
 from bisect import bisect_left, bisect_right
 from pathlib import Path
 
-if getattr(sys, 'frozen', False):
-    _BASE = Path(sys._MEIPASS)
-else:
-    _BASE = Path(__file__).resolve().parent.parent
+_BASE = Path(__file__).resolve().parent.parent
 
 
 def _load_csv(filename: str) -> list[float]:

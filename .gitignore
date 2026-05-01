@@ -15,11 +15,9 @@ frontend/public/build/
 frontend/public/fonts/
 frontend/public/parserWorker.js
 
-# PyInstaller
+# Build artifacts
 *.manifest
 *.exe
-
-# Build artifacts
 python/installed_packages.json
 
 # IDE

@@ -5,6 +5,25 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.4] - 2026-05-01
+
+### Changed
+
+- Replaced PyInstaller full-app freeze with embedded Python 3.12 distribution. The build now ships a portable directory containing the Python 3.12 embeddable runtime with all pip dependencies pre-installed, plus a small launcher exe.
+- Code cells in the packaged distribution now have full access to the embedded Python environment — any package installed into it is available for import.
+- Build script (`build.py`) rewritten with 5-phase pipeline: frontend build, embedded Python setup, app file copy, launcher compilation, zip packaging.
+- CSV data files (`RES0.1.csv`, `RES1.0.csv`, `CAP.csv`, `IND.csv`) are now properly included in the distribution (fixes pre-existing bug where `pyinstaller.spec` did not bundle them).
+
+### Added
+
+- `launcher.py` — minimal launcher script compiled into a ~6MB exe that starts the embedded Python.
+- `pyinstaller_launcher.spec` — PyInstaller spec for the launcher only (replaces the full-app `pyinstaller.spec`).
+
+### Removed
+
+- `pyinstaller.spec` — replaced by `pyinstaller_launcher.spec`.
+- `sys.frozen` / `_MEIPASS` code paths in `main.py`, `api.py`, and `standard_parts.py` (dead code with embedded Python approach).
+
 ## [1.0.3] - 2026-04-30
 
 ### Changed
@@ -85,9 +104,3 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Server-dependent features (shareable links, example sheets, server-side export).
 - Pyodide/WASM dependency.
 - Cloudflare Pages Functions backend.
-
-[unreleased]: https://github.com/animagr/EngineeringPapyr/compare/v1.0.3...HEAD
-[1.0.3]: https://github.com/animagr/EngineeringPapyr/compare/v1.0.2...v1.0.3
-[1.0.2]: https://github.com/animagr/EngineeringPapyr/compare/v1.0.1...v1.0.2
-[1.0.1]: https://github.com/animagr/EngineeringPapyr/compare/v1.0.0...v1.0.1
-[1.0.0]: https://github.com/animagr/EngineeringPapyr/releases/tag/v1.0.0

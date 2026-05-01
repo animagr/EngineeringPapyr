@@ -1,20 +1,16 @@
-import sys
 import os
+import sys
 from pathlib import Path
 
 import webview
 
 from api import Api
 
-__version__ = '1.0.3'
+__version__ = '1.0.4'
 
 
 def get_public_path() -> Path:
-    if getattr(sys, 'frozen', False):
-        base = Path(sys._MEIPASS)
-    else:
-        base = Path(__file__).resolve().parent.parent / 'frontend'
-    return base / 'public'
+    return Path(__file__).resolve().parent.parent / 'frontend' / 'public'
 
 
 def main():

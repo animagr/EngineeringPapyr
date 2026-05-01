@@ -27,7 +27,7 @@ EngineeringPapyr replaces that entire stack:
 | Frontend | Svelte + KaTeX (same) | Svelte + KaTeX (same) |
 | Frontend assets | ~165MB (includes pyodide/) | ~73MB (no pyodide/) |
 | Code completion | Jedi via Pyodide Worker | Jedi via native Python |
-| Packaging | Node.js exe via pkg | Python exe via PyInstaller |
+| Packaging | Node.js exe via pkg | Embedded Python 3.12 + launcher exe |
 
 All features are preserved: math cells, documentation cells, system solve cells, EVA/RSS analysis cells, code cells, plot cells, fluid cells, data tables, DOCX export (native pandoc via pypandoc), and PDF export (print dialog). Code cells can now import any pip-installed Python package on the computer.
 
@@ -75,7 +75,7 @@ Open it from the app via the file open button or drag and drop.
 
 A built-in Code Cell function for snapping calculated values to standard component series (0.1% resistors, 1% resistors, capacitors, inductors).
 
-Insert a code cell and place this function inside to use it (SymPy Mode is only used if evaluating symbolic arguments, not numberic).
+Insert a code cell and place this function inside to use it (SymPy Mode is only used if evaluating symbolic arguments, not numeric).
 
 **Code Cell Function Definition:**
 
@@ -174,15 +174,35 @@ py -3.12 python/main.py
 
 Or double-click `Run.bat` from the repo root.
 
-### 4. Package as .exe (portable, frozen)
+### 4. Package as portable distribution
 
-Packages the app into a single standalone executable. Python and all dependencies are frozen at build time — code cells can only import packages that were installed when the exe was built. To add more packages, `pip install` them and rebuild.
+Builds a self-contained directory with an embedded Python 3.12 distribution, all pip dependencies, and a small launcher exe. Code cells have full access to the embedded Python environment — any package installed into it is available for import.
 
 ```Powershell
 py -3.12 build.py
 ```
 
-Output: `dist/EngineeringPapyr.exe`
+Output: `dist/EngineeringPapyr/` directory and `dist/EngineeringPapyr.zip`
+
+The build script:
+1. Builds the frontend (`npm run build:native`)
+2. Downloads and sets up the Python 3.12 embeddable distribution
+3. Installs all pip dependencies from `requirements.txt` into the embedded Python
+4. Copies app source, frontend, and data files
+5. Compiles a small launcher exe via PyInstaller
+6. Creates a zip for distribution
+
+Run `dist/EngineeringPapyr/EngineeringPapyr.exe` to launch the app. No system Python installation is required.
+
+### 5. Adding packages to the portable distribution
+
+To install additional Python packages into the embedded environment after building:
+
+```Powershell
+dist\EngineeringPapyr\python-3.12\python.exe -m pip install <package>
+```
+
+The package is immediately available for import in code cells on the next app launch. No rebuild is required.
 
 ---
 
@@ -226,8 +246,9 @@ The JS-Python boundary is 100% JSON strings in both directions. PyWebView runs A
 | `frontend/src/App.svelte` | Main app (calls `window.pywebview.api` instead of Web Workers) |
 | `frontend/src/jediWrapper.ts` | Jedi bridge (PyWebView API instead of Worker) |
 | `frontend/rollup.config.js` | Build config (no pyodide/jedi worker entries) |
-| `pyinstaller.spec` | PyInstaller packaging config |
-| `build.py` | Build orchestrator (npm build + PyInstaller) |
+| `launcher.py` | Tiny launcher script, compiled into the launcher exe |
+| `pyinstaller_launcher.spec` | PyInstaller config for the launcher exe only |
+| `build.py` | Build orchestrator (frontend + embedded Python + launcher) |
 
 ---
 

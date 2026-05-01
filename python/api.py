@@ -102,10 +102,6 @@ class Api:
 
     def _find_pandoc(self) -> str | None:
         import shutil
-        if getattr(sys, 'frozen', False):
-            bundled = Path(sys._MEIPASS) / 'pandoc.exe'
-            if bundled.exists():
-                return str(bundled)
         try:
             import pypandoc
             p = Path(pypandoc.get_pandoc_path())
@@ -121,15 +117,10 @@ class Api:
         return True
 
     def get_python_info(self) -> str:
+        from importlib.metadata import distributions
         packages = {}
-        if getattr(sys, 'frozen', False):
-            pkg_file = Path(sys._MEIPASS) / 'installed_packages.json'
-            if pkg_file.exists():
-                packages = json.loads(pkg_file.read_text(encoding='utf-8'))
-        else:
-            from importlib.metadata import distributions
-            for dist in distributions():
-                packages[dist.metadata['Name']] = dist.metadata['Version']
+        for dist in distributions():
+            packages[dist.metadata['Name']] = dist.metadata['Version']
         return json.dumps({
             'pythonVersion': sys.version.split()[0],
             'packages': packages,
