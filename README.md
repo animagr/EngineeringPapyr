@@ -71,7 +71,7 @@ The included `Example.epxyz` file demonstrates both EVA and RSS analysis on an o
 
 Open it from the app via the file open button or drag and drop.
 
-## Code Cell: Standard Part Selector
+### Code Cell: Standard Part Selector
 
 A built-in Code Cell function for snapping calculated values to standard component series (0.1% resistors, 1% resistors, capacitors, inductors).
 
