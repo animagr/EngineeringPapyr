@@ -1,6 +1,6 @@
 # EngineeringPapyr
 
-A native Windows desktop build of [EngineeringPaper.xyz](https://engineeringpaper.xyz) using **PyWebView** + **native Python** instead of Pyodide/WebAssembly. Calculations run via native CPython with SymPy — faster startup, faster computation (3-5x faster), and a smaller footprint.
+A native Windows desktop build of [EngineeringPaper.xyz](https://engineeringpaper.xyz) using **PyWebView** + **native Python** instead of Pyodide/WebAssembly. Calculations run via native Python with SymPy — faster startup, faster computation (3-5x faster), and a smaller footprint.
 
 ---
 
@@ -21,7 +21,7 @@ EngineeringPapyr replaces that entire stack:
 | Aspect | Original Standalone | EngineeringPapyr |
 |--------|-------------------|------------------|
 | Window | System browser (Chrome/Firefox) | Native window (Edge WebView2) |
-| Python runtime | Pyodide (WASM, ~92MB) | Native CPython |
+| Python runtime | Pyodide (WASM, ~92MB) | Native Python |
 | Computation engine | SymPy via Pyodide | SymPy via native Python |
 | SymPy startup | ~10-15s (WASM load + init) | ~2-5s (native import) |
 | Frontend | Svelte + KaTeX (same) | Svelte + KaTeX (same) |
