@@ -5,6 +5,19 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.5] - 2026-05-02
+
+### Added
+
+- Electronic Part Stress Analysis (EPSA) module (`python/part_stress.py`). Code cells can import `resistor()`, `capacitor()`, and `stress_report()` to check component stresses against derating rules (80% voltage, 60% power) with automatic SMD package selection.
+- `PKG_RATINGS.csv` — SMD package ratings database for resistors (0201–2512) and capacitors (0201–2220).
+- Standard capacitor voltage rating selection from MLCC series (4V–3kV).
+- EPSA output as grouped CSV report: resistors (one row per part with voltage and power) and capacitors (one row per part with voltage), with units in headers (ohm, mA, V, mW, pF).
+
+### Changed
+
+- `build.py` now includes `PKG_RATINGS.csv` in the distribution `DATA_FILES`.
+
 ## [1.0.4] - 2026-05-01
 
 ### Changed

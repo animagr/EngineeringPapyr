@@ -118,6 +118,88 @@ R_down = SelectStd(4870, -1) =      ← next 0.1% resistor down
 C_std = SelectStd(0.0000047, 3) =   ← nearest standard capacitor
 ```
 
+### Code Cell: Electronic Part Stress Analysis (EPSA)
+
+A built-in Code Cell function for checking component stresses against derating rules with automatic SMD package selection. Provide operating conditions (current for resistors, voltage for capacitors) and the module calculates stress, picks the smallest passing package, and outputs a CSV stress report.
+
+Derating defaults: 80% voltage, 60% power. Resistor voltage rating uses the minimum of the package rating or the power-limited voltage (`sqrt(P_rated * R)`). To customize derating, set the module-level constants before calling `resistor()`/`capacitor()`:
+
+```python
+import part_stress
+part_stress.VOLTAGE_DERATING = 0.70  # 70% voltage derating (default 0.80)
+part_stress.POWER_DERATING = 0.50    # 50% power derating (default 0.60)
+```
+
+All inputs must be in SI base units (Amps, Volts, Ohms, Farads). Math cells with units (e.g. `0.42 [mA]`) auto-convert to SI before reaching the code cell. If entering raw numbers without units, use SI values directly (e.g. `0.42e-3` for 0.42 mA).
+
+**Code Cell Function Definition:**
+
+```
+EPSA(I_{R1}, I_{R2}, V_{Cin}) = [text]
+```
+
+**Code area:**
+
+```python
+from part_stress import resistor, capacitor, stress_report
+
+def calculate(i_r1, i_r2, v_cin):
+    return stress_report(
+        resistor("R1", 10e3, "1%", i_r1),
+        resistor("R2", 4.7e3, "1%", i_r2),
+        capacitor("C_IN", 100e-9, "10%", v_cin),
+    )
+```
+
+**Then in math cells, define the operating conditions:**
+
+```
+I_{R1} = 0.42 [mA]
+I_{R2} = 5 [mA]
+V_{Cin} = 12 [V]
+```
+
+The output is a CSV report grouped by component type, one row per part:
+
+```
+Resistors
+Ref,Package,Value(ohm),Tolerance,Current(mA),V_rated(V),V_derated(V),V_actual(V),V_stress,V_status,P_rated(mW),P_derated(mW),P_actual(mW),P_stress,P_status
+R1,0201,10000,1%,0.42,15,12,4.2,0.35,PASS,50,30,1.764,0.059,PASS
+R2,1206,4700,1%,5,34.28,27.42,23.5,0.857,PASS,250,150,117.5,0.783,PASS
+
+Capacitors
+Ref,Package,Value(pF),Tolerance,V_rated(V),V_derated(V),V_actual(V),V_stress,V_status
+C_IN,0402,100000,10%,16,12.8,12,0.938,PASS
+```
+
+To force a specific package instead of auto-selecting: `resistor("R1", 10e3, "1%", i_r1, package="0805")`.
+
+The function scales to any number of components — expand the code cell signature and `calculate()` arguments to match your design. For example, a design with 5 resistors and 3 capacitors:
+
+**Code Cell Function Definition:**
+
+```
+EPSA(I_{R1}, I_{R2}, I_{R3}, I_{R4}, I_{R5}, V_{C1}, V_{C2}, V_{C3}) = [text]
+```
+
+**Code area:**
+
+```python
+from part_stress import resistor, capacitor, stress_report
+
+def calculate(i_r1, i_r2, i_r3, i_r4, i_r5, v_c1, v_c2, v_c3):
+    return stress_report(
+        resistor("R1", 10e3, "1%", i_r1),
+        resistor("R2", 4.7e3, "1%", i_r2),
+        resistor("R3", 1e3, "5%", i_r3),
+        resistor("R4", 100e3, "1%", i_r4),
+        resistor("R5", 220, "1%", i_r5),
+        capacitor("C1", 100e-9, "10%", v_c1),
+        capacitor("C2", 10e-6, "20%", v_c2),
+        capacitor("C3", 1e-6, "10%", v_c3),
+    )
+```
+
 ---
 
 ## How to Build and Run

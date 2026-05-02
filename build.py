@@ -20,7 +20,7 @@ DIST_DIR = ROOT_DIR / 'dist' / 'EngineeringPapyr'
 EMBED_DIR = DIST_DIR / 'python-3.12'
 FRONTEND_DIR = ROOT_DIR / 'frontend'
 
-DATA_FILES = ['RES0.1.csv', 'RES1.0.csv', 'CAP.csv', 'IND.csv']
+DATA_FILES = ['RES0.1.csv', 'RES1.0.csv', 'CAP.csv', 'IND.csv', 'PKG_RATINGS.csv']
 EXTRA_FILES = ['Example.epxyz', 'Example.docx']
 
 REQUIREMENTS_EXCLUDE = {'pyinstaller'}

@@ -1,0 +1,17 @@
+comp_type,package,voltage,power
+resistor,0201,15,0.05
+resistor,0402,50,0.0625
+resistor,0603,75,0.1
+resistor,0805,150,0.125
+resistor,1206,200,0.25
+resistor,1210,200,0.5
+resistor,2010,200,0.5
+resistor,2512,200,1.0
+capacitor,0201,6.3,
+capacitor,0402,16,
+capacitor,0603,50,
+capacitor,0805,50,
+capacitor,1206,100,
+capacitor,1210,100,
+capacitor,1812,250,
+capacitor,2220,500,
