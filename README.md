@@ -71,6 +71,17 @@ The included `Example.epxyz` file demonstrates both EVA and RSS analysis on an o
 
 Open it from the app via the file open button or drag and drop.
 
+### Templates
+
+The `templates/` folder contains ready-to-use `.epxyz` design worksheets:
+
+- **Buck Converter** — Step-down converter power stage
+- **Boost Converter** — Step-up converter power stage
+- **Buck-Boost Converter** — Inverting converter power stage
+- **Power Supply Topologies** — All 20 topologies side-by-side (duty cycle, FET stress, diode stress) with a topology selection guide and control methods reference
+
+Open any template from the app, modify the input parameters, and all derived values update automatically.
+
 ### Code Cell: Standard Part Selector
 
 A built-in Code Cell function for snapping calculated values to standard component series (0.1% resistors, 1% resistors, capacitors, inductors).
