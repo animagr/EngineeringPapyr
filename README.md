@@ -58,7 +58,7 @@ Finds worst-case min/max of an output expression by evaluating all 2^n combinati
 
 **How it works:**
 
-- Evaluates all 2^n combinations of min/max bounds (max 20 parameters)
+- Evaluates all 2^n combinations of min/max bounds (max 25 parameters)
 - Shows nominal value plus extreme min and max
 - Sensitivity analysis: varies each parameter while holding others at midpoint, reports percentage contribution (sorted highest to lowest)
 
