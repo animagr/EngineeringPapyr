@@ -54,7 +54,13 @@ Finds worst-case min/max of an output expression by evaluating all 2^n combinati
 1. Define parameters on the sheet (e.g., `V = 10 [V]`, `R = 1000 [Ω]`, `I = V / R =`)
 2. Insert an EVA cell
 3. Set the **Query** field to the expression to evaluate (e.g., `I=`)
-4. Add parameter rows with **Parameter** name, **Min**, and **Max** values
+4. Add parameter rows with **Parameter** name, **Min**, and **Max** values2
+
+**How it works:**
+
+- Evaluates all 2^n combinations of min/max bounds (max 20 parameters)
+- Shows nominal value plus extreme min and max
+- Sensitivity analysis: varies each parameter while holding others at midpoint, reports percentage contribution (sorted highest to lowest)
 
 ### Root Sum Square (RSS) Analysis Cell
 
@@ -64,6 +70,28 @@ Statistical tolerance analysis cell that computes the RSS error envelope. Unlike
 2. Insert an RSS cell
 3. Set the **Query** field to the expression to evaluate
 4. Add parameter rows with **Parameter** name, **Min**, **Nominal**, and **Max** values
+
+**How it works:**
+
+- Evaluates the query at all-nominal to get the baseline output
+- For each parameter, computes the output deviation when that parameter moves to its worst-case limit (all others held at nominal)
+- RSS total = sqrt(delta_1^2 + delta_2^2 + ... + delta_n^2)
+- RSS Min = nominal - RSS total, RSS Max = nominal + RSS total
+- Sensitivity: reports % of RSS variance (delta_i^2 / sum of all delta^2) per parameter, sorted highest first
+
+**Why % of RSS variance (not arithmetic %):**
+
+In RSS, errors combine as variances (squares). A source contributing 50% of RSS variance contributes sqrt(0.5) = 71% of the RSS voltage. Ranking by variance contribution correctly identifies which tolerance to tighten for maximum RSS reduction.
+
+**When RSS is valid:**
+- Error sources are independent (separate physical components or mechanisms)
+- Error sources are uncorrelated (no shared cause — e.g., two resistors on different packages)
+- Transfer function is approximately linear over the tolerance range
+
+**When RSS is NOT valid (use EVA instead):**
+- Parameters are correlated (e.g., resistors from the same reel track together)
+- A single root cause drives multiple parameters (e.g., a supply rail feeding multiple stages)
+- The transfer function is highly nonlinear over the tolerance range
 
 ### Example
 
