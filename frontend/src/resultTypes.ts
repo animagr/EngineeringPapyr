@@ -130,12 +130,18 @@ export type SensitivityEntry = {
   percentage: number;
 };
 
+export type GeneratedVariable = {
+  latex: string;
+  inputLatex: string;
+};
+
 export type ExtremeValueResult = {
   extremeValueResult: true;
   nominalResult: Result | FiniteImagResult;
   minResult: Result | FiniteImagResult;
   maxResult: Result | FiniteImagResult;
   sensitivity?: SensitivityEntry[];
+  generatedVariables?: GeneratedVariable[];
   error?: string;
 };
 
@@ -156,6 +162,7 @@ export type RssResult = {
   maxResult: Result | FiniteImagResult;
   rssTotal: number;
   sensitivity?: RssSensitivityEntry[];
+  generatedVariables?: GeneratedVariable[];
   error?: string;
 };
 

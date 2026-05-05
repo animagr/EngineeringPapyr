@@ -227,6 +227,45 @@
     border-top: 1px solid #ddd;
   }
 
+  div.generated-vars-section {
+    margin-top: 8px;
+    padding-top: 8px;
+    border-top: 1px solid #eee;
+  }
+
+  span.generated-vars-header {
+    font-weight: bold;
+    font-size: 0.85em;
+    color: #555;
+  }
+
+  div.generated-vars-list {
+    display: flex;
+    flex-direction: column;
+    row-gap: 2px;
+    margin-top: 4px;
+    padding-left: 8px;
+  }
+
+  div.generated-var-entry {
+    display: flex;
+    align-items: center;
+    column-gap: 8px;
+    font-size: 0.85em;
+  }
+
+  span.generated-var-hint {
+    color: #888;
+    font-size: 0.85em;
+  }
+
+  span.generated-var-hint code {
+    background: #f0f0f0;
+    padding: 1px 4px;
+    border-radius: 3px;
+    font-size: 0.95em;
+  }
+
   div.sensitivity-section {
     margin-top: 8px;
     padding-top: 8px;
@@ -397,6 +436,19 @@
             latex={`=${formatResultValue(evaResult.maxResult)}${evaResult.maxResult.unitsLatex ? '\\,' + evaResult.maxResult.unitsLatex : ''}`}
           />
         </div>
+        {#if evaResult.generatedVariables && evaResult.generatedVariables.length > 0}
+          <div class="generated-vars-section">
+            <span class="generated-vars-header">Generated variables:</span>
+            <div class="generated-vars-list">
+              {#each evaResult.generatedVariables as gv}
+                <div class="generated-var-entry">
+                  <MathField latex={gv.latex} />
+                  <span class="generated-var-hint">(type <code>{gv.inputLatex}</code>)</span>
+                </div>
+              {/each}
+            </div>
+          </div>
+        {/if}
         {#if evaResult.sensitivity && evaResult.sensitivity.length > 0}
           <div class="sensitivity-section">
             <span class="sensitivity-header">Sensitivity:</span>

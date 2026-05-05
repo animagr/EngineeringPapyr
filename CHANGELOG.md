@@ -5,6 +5,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.6] - 2026-05-05
+
+### Added
+
+- EVA/RSS downstream referencing: EVA and RSS cells now automatically expose their min/max results as named variables that downstream math cells can reference. For a query variable like `V_{OUT}`, the suffixes `EVAmin`, `EVAmax`, `RSSmin`, and `RSSmax` are appended to the subscript (e.g., type `V_{OUTEVAmin}` to reference the EVA minimum). Results display with nested subscript notation (`V_{OUT_{EVAmin}}`).
+- EVA and RSS cells now display their generated variable names (with input hints) below the min/max results, so users can see what to type in downstream cells.
+- Synthetic EVA/RSS values are emitted as sub-results to the frontend for potential autocomplete/display use.
+
 ## [1.0.5] - 2026-05-02
 
 ### Added
@@ -117,3 +125,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Server-dependent features (shareable links, example sheets, server-side export).
 - Pyodide/WASM dependency.
 - Cloudflare Pages Functions backend.
+
+[1.0.6]: https://github.com/animagr/EngineeringPapyr/compare/v1.0.5...v1.0.6
+[1.0.5]: https://github.com/animagr/EngineeringPapyr/compare/v1.0.4...v1.0.5
+[1.0.4]: https://github.com/animagr/EngineeringPapyr/releases/tag/v1.0.4

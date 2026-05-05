@@ -685,12 +685,17 @@ class SensitivityEntry(TypedDict):
     contribution: float  # absolute contribution to output variation
     percentage: float    # percentage of total variation
 
+class GeneratedVariable(TypedDict):
+    latex: str
+    inputLatex: str
+
 class ExtremeValueResult(TypedDict):
     extremeValueResult: Literal[True]
     nominalResult: Result | FiniteImagResult
     minResult: Result | FiniteImagResult
     maxResult: Result | FiniteImagResult
     sensitivity: NotRequired[list[SensitivityEntry]]
+    generatedVariables: NotRequired[list[GeneratedVariable]]
     error: NotRequired[str]
 
 class RssSensitivityEntry(TypedDict):
@@ -705,6 +710,7 @@ class RssResult(TypedDict):
     maxResult: Result | FiniteImagResult
     rssTotal: float
     sensitivity: NotRequired[list[RssSensitivityEntry]]
+    generatedVariables: NotRequired[list[GeneratedVariable]]
     error: NotRequired[str]
 
 class Results(TypedDict):
@@ -3991,6 +3997,9 @@ def evaluate_statements(statements: list[InputAndSystemStatement],
 
         result["generatedCode"] = generatedCode
 
+    # Collect synthetic EVA/RSS variables for downstream referencing
+    synthetic_eva_rss_entries: list[tuple[Symbol, str, Expr, str]] = []  # (symbol, value_str, dim_expr, latex)
+
     # Extreme Value Analysis post-processing
     if extreme_value_definitions:
         for ev_def in extreme_value_definitions:
@@ -4291,13 +4300,51 @@ def evaluate_statements(statements: list[InputAndSystemStatement],
                     sensitivity_list.sort(key=lambda e: e["contribution"], reverse=True)
 
             if min_result is not None and max_result is not None:
+                eva_generated_vars: list[GeneratedVariable] = []
+
+                # Record synthetic variable info for downstream referencing
+                eva_query_sympy = query_stmt.get("sympy", "")
+                if eva_query_sympy:
+                    eva_base = eva_query_sympy[:-len("_as_variable")] if eva_query_sympy.endswith("_as_variable") else eva_query_sympy
+                    eva_orig_latex = variable_name_map.get(Symbol(eva_query_sympy), eva_query_sympy)
+                    try:
+                        _, eva_query_dim, _ = replace_placeholder_funcs(
+                            not convert_floats_to_fractions, query_expression, None, False,
+                            parameter_subs, ev_dim_subs, placeholder_map, placeholder_set,
+                            {}, DataTableSubs()
+                        )
+                    except Exception:
+                        eva_query_dim = S(1)
+                    if eva_query_dim is None:
+                        eva_query_dim = S(1)
+
+                    for eva_suffix, eva_res in [("EVAmin", min_result), ("EVAmax", max_result)]:
+                        # Build symbol name matching parser output: V_{OUTEVAmin} → V_OUTEVAmin_as_variable
+                        eva_parts = eva_base.split('_', 1)
+                        if len(eva_parts) > 1:
+                            syn_name = f"{eva_parts[0]}_{eva_parts[1]}{eva_suffix}_as_variable"
+                        else:
+                            syn_name = f"{eva_base}_{eva_suffix}_as_variable"
+                        syn_val = eva_res.get("value", "")
+                        if syn_val:
+                            if eva_orig_latex.endswith('}') and '_{' in eva_orig_latex:
+                                syn_latex = eva_orig_latex[:-1] + '_{' + eva_suffix + '}}'
+                                input_latex = eva_orig_latex[:-1] + eva_suffix + '}'
+                            else:
+                                syn_latex = eva_orig_latex + '_{' + eva_suffix + '}'
+                                input_latex = syn_latex
+                            synthetic_eva_rss_entries.append((Symbol(syn_name), syn_val, eva_query_dim, syn_latex))
+                            eva_generated_vars.append(GeneratedVariable(latex=syn_latex, inputLatex=input_latex))
+
                 results_with_ranges[query_index] = ExtremeValueResult(
                     extremeValueResult=True,
                     nominalResult=cast(Result | FiniteImagResult, nominal_result),
                     minResult=cast(Result | FiniteImagResult, min_result),
                     maxResult=cast(Result | FiniteImagResult, max_result),
-                    sensitivity=sensitivity_list
+                    sensitivity=sensitivity_list,
+                    generatedVariables=eva_generated_vars
                 )
+
             else:
                 results_with_ranges[query_index] = ExtremeValueResult(
                     extremeValueResult=True,
@@ -4597,16 +4644,117 @@ def evaluate_statements(statements: list[InputAndSystemStatement],
                 ))
             sensitivity_list.sort(key=lambda e: e["varianceContribution"], reverse=True)
 
+            rss_generated_vars: list[GeneratedVariable] = []
+
+            # Record synthetic variable info for downstream referencing
+            rss_query_sympy = query_stmt.get("sympy", "")
+            if rss_query_sympy:
+                rss_base = rss_query_sympy[:-len("_as_variable")] if rss_query_sympy.endswith("_as_variable") else rss_query_sympy
+                rss_orig_latex = variable_name_map.get(Symbol(rss_query_sympy), rss_query_sympy)
+                try:
+                    _, rss_query_dim, _ = replace_placeholder_funcs(
+                        not convert_floats_to_fractions, query_expression, None, False,
+                        parameter_subs, rss_dim_subs, placeholder_map, placeholder_set,
+                        {}, DataTableSubs()
+                    )
+                except Exception:
+                    rss_query_dim = S(1)
+                if rss_query_dim is None:
+                    rss_query_dim = S(1)
+
+                for rss_suffix, rss_res in [("RSSmin", min_result_obj), ("RSSmax", max_result_obj)]:
+                    # Build symbol name matching parser output: V_{OUTRSSmin} → V_OUTRSSmin_as_variable
+                    rss_parts = rss_base.split('_', 1)
+                    if len(rss_parts) > 1:
+                        syn_name = f"{rss_parts[0]}_{rss_parts[1]}{rss_suffix}_as_variable"
+                    else:
+                        syn_name = f"{rss_base}_{rss_suffix}_as_variable"
+                    syn_val = rss_res.get("value", "")
+                    if syn_val:
+                        if rss_orig_latex.endswith('}') and '_{' in rss_orig_latex:
+                            syn_latex = rss_orig_latex[:-1] + '_{' + rss_suffix + '}}'
+                            input_latex = rss_orig_latex[:-1] + rss_suffix + '}'
+                        else:
+                            syn_latex = rss_orig_latex + '_{' + rss_suffix + '}'
+                            input_latex = syn_latex
+                        synthetic_eva_rss_entries.append((Symbol(syn_name), syn_val, rss_query_dim, syn_latex))
+                        rss_generated_vars.append(GeneratedVariable(latex=syn_latex, inputLatex=input_latex))
+
             results_with_ranges[query_index] = RssResult(
                 rssResult=True,
                 nominalResult=cast(Result | FiniteImagResult, nominal_result_obj),
                 minResult=cast(Result | FiniteImagResult, min_result_obj),
                 maxResult=cast(Result | FiniteImagResult, max_result_obj),
                 rssTotal=rss_total,
-                sensitivity=sensitivity_list
+                sensitivity=sensitivity_list,
+                generatedVariables=rss_generated_vars
             )
 
-    return combine_plot_and_table_data_results(results_with_ranges[:num_statements], statement_plot_info, statement_data_table_info), numerical_system_cell_unit_errors
+    # Re-evaluate downstream expressions that reference synthetic EVA/RSS variables
+    synthetic_sub_results: list[Result] = []
+    if synthetic_eva_rss_entries:
+        updated_parameter_subs = dict(parameter_subs)
+        updated_dim_subs = dict(dimensional_analysis_subs)
+
+        for syn_sym, syn_val_str, syn_dim, syn_latex in synthetic_eva_rss_entries:
+            updated_parameter_subs[syn_sym] = sympify(syn_val_str, rational=convert_floats_to_fractions)
+            updated_dim_subs[syn_sym] = syn_dim
+            variable_name_map[syn_sym] = syn_latex
+
+        synthetic_sym_names = {str(entry[0]) for entry in synthetic_eva_rss_entries}
+
+        for item in combined_expressions:
+            if item.get("isBlank", False) or item.get("isScatter", False) or item.get("isRange", False):
+                continue
+
+            reeval_expression = cast(Expr, item["expression"].doit())
+            free_sym_names = {str(s) for s in reeval_expression.free_symbols}
+
+            if not (free_sym_names & synthetic_sym_names):
+                continue
+
+            reeval_index = item["index"]
+
+            reeval_result, reeval_sym, reeval_dim, reeval_dim_err = get_evaluated_expression(
+                reeval_expression, not convert_floats_to_fractions,
+                updated_parameter_subs, updated_dim_subs,
+                placeholder_map, placeholder_set,
+                {}, variable_name_map
+            )
+
+            if not is_matrix(reeval_result):
+                results_with_ranges[reeval_index] = get_result(
+                    reeval_result, reeval_dim,
+                    simplify_symbolic_expressions,
+                    reeval_dim_err, cast(Expr, reeval_sym),
+                    item.get("isRange", False),
+                    custom_base_units,
+                    item.get("isSubQuery", False),
+                    item.get("subQueryName", ""),
+                    variable_name_map
+                )
+
+        for syn_sym, syn_val_str, syn_dim, syn_latex in synthetic_eva_rss_entries:
+            syn_evalf = sympify(syn_val_str, rational=convert_floats_to_fractions).evalf(PRECISION)
+            synthetic_sub_results.append(Result(
+                value=str(syn_evalf),
+                symbolicValue=syn_latex,
+                numeric=True,
+                units="",
+                unitsLatex="",
+                real=True,
+                finite=True,
+                customUnitsDefined=False,
+                customUnits="",
+                customUnitsLatex="",
+                isSubResult=True,
+                subQueryName=str(syn_sym)
+            ))
+
+    final_combined = combine_plot_and_table_data_results(results_with_ranges[:num_statements], statement_plot_info, statement_data_table_info)
+    if synthetic_sub_results:
+        final_combined.extend(synthetic_sub_results)
+    return final_combined, numerical_system_cell_unit_errors
 
 
 def get_query_values(statements: list[InputAndSystemStatement],
