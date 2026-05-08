@@ -254,7 +254,7 @@ def calculate(i_r1, i_r2, i_r3, i_r4, i_r5, v_c1, v_c2, v_c3):
 ### 1. Install Python dependencies
 
 ```Powershell
-cd C:\Claude\EngPaper\EngineeringPapyr
+cd C:\<PathToFolder>\EngineeringPapyr
 py -3.12 -m pip install -r requirements.txt
 ```
 
@@ -263,7 +263,7 @@ py -3.12 -m pip install -r requirements.txt
 **Windows users:** Run `npm install` from **Git Bash**, not PowerShell or cmd. Some dependencies require bash to build.
 
 ```bash
-cd C:\Claude\EngPaper\EngineeringPapyr\frontend
+cd C:\<PathToFolder>\EngineeringPapyr\frontend
 npm install
 npm run build:native
 ```
@@ -274,7 +274,7 @@ Output goes to `frontend/public/`.
 To clean build artifacts before rebuilding:
 
 ```bash
-cd C:\Claude\EngPaper\EngineeringPapyr\frontend
+cd C:\<PathToFolder>\EngineeringPapyr\frontend
 rm -rf public/build
 ```
 
@@ -304,7 +304,7 @@ Builds a self-contained directory with an embedded Python 3.12 distribution, all
 py -3.12 build.py
 ```
 
-Output: `dist/EngineeringPapyr/` directory and `dist/EngineeringPapyr.zip`
+Output: `dist/EngineeringPapyr/` directory and `dist/EngineeringPapyr-vX.X.X.zip`
 
 The build script:
 1. Builds the frontend (`npm run build:native`)
