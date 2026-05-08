@@ -5,6 +5,17 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.7] - 2026-05-08
+
+### Removed
+
+- Tutorial button from top-right header menu — it opened a new empty sheet, which could cause loss of unsaved work.
+- Tutorial link from syntax error footer message.
+
+### Fixed
+
+- Inconsistent annotation column positioning in DOCX export. Annotations are now inline with Math cells with some spacing.
+
 ## [1.0.6] - 2026-05-05
 
 ### Added
@@ -126,6 +137,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Pyodide/WASM dependency.
 - Cloudflare Pages Functions backend.
 
+[1.0.7]: https://github.com/animagr/EngineeringPapyr/compare/v1.0.6...v1.0.7
 [1.0.6]: https://github.com/animagr/EngineeringPapyr/compare/v1.0.5...v1.0.6
 [1.0.5]: https://github.com/animagr/EngineeringPapyr/compare/v1.0.4...v1.0.5
 [1.0.4]: https://github.com/animagr/EngineeringPapyr/releases/tag/v1.0.4

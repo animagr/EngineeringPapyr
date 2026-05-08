@@ -74,12 +74,12 @@
 
       const result = queryStatement ? `${resultLatex} ${resultUnitsLatex}` : "";
 
-      if (centerEquations) {
+      if (centerEquations && !mathCell.annotation) {
         md = `$$ ${mathCell.mathField.latex} ${result} ${errorMessage} $$\n\n`;
       } else {
         const latex = `${mathCell.mathField.latex} ${result} ${errorMessage}`.trim();
         if (latex) {
-          md = `$${latex}$ <!-- inline -->\n\n`;
+          md = `$${latex}$\n\n`;
         } else {
           md = "";
         }
@@ -98,8 +98,7 @@
 
     if (mathCell.annotation && md) {
       const trimmed = md.trimEnd();
-      // Two-column pipe table keeps equation and annotation on the same line in DOCX
-      md = `| | |\n|:---|---:|\n| ${trimmed} | *${mathCell.annotation}* |\n\n`;
+      md = `${trimmed}&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;*${mathCell.annotation}*\n\n`;
     }
 
     return md;

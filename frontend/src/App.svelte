@@ -66,7 +66,6 @@
   import Document from "carbon-icons-svelte/lib/Document.svelte";
   import DocumentBlank from "carbon-icons-svelte/lib/DocumentBlank.svelte";
   import Ruler from "carbon-icons-svelte/lib/Ruler.svelte";
-  import Help from "carbon-icons-svelte/lib/Help.svelte";
   import Launch from "carbon-icons-svelte/lib/Launch.svelte";
   import Keyboard from "carbon-icons-svelte/lib/Keyboard.svelte";
   import ErrorFilled from "carbon-icons-svelte/lib/ErrorFilled.svelte";
@@ -2598,13 +2597,6 @@ If problem persists after attempting to refresh the page, please report problem 
           icon={CloudUpload}
         />
         {/if}
-        <HeaderGlobalAction
-          href={`/${tutorialHash}`}
-          iconDescription="Tutorial"
-          rel="nofollow"
-          icon={Help}
-          on:click={(e) => handleLinkPushState(e, `/${tutorialHash}`) }
-        />
         <div class="dot-container">
           <HeaderGlobalAction 
             iconDescription={"Sheet Settings" + (usingDefaultConfig ? "" : " (Modified)")}
@@ -2897,15 +2889,7 @@ If problem persists after attempting to refresh the page, please report problem 
         <ErrorFilled color="#da1e28"/>
         <div>
           Sheet cannot be evaluated due to a syntax error.
-          See this 
-          <a
-            href={`/${tutorialHash}`}
-            rel="nofollow"
-            onclick={(e) => handleLinkPushState(e, `/${tutorialHash}`)}
-          >
-            tutorial
-          </a>
-          to learn how to use this app.
+          Sheet cannot be evaluated. Check the syntax error below.
         </div>
         <button onclick={showSyntaxError}>Show Error</button>
       </div>
