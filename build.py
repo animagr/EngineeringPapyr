@@ -19,6 +19,7 @@ CACHE_DIR = ROOT_DIR / 'build'
 DIST_DIR = ROOT_DIR / 'dist' / 'EngineeringPapyr'
 EMBED_DIR = DIST_DIR / 'python-3.12'
 FRONTEND_DIR = ROOT_DIR / 'frontend'
+TUTORIALS_DIR = ROOT_DIR / 'templates' / 'Tutorials'
 
 DATA_FILES = ['RES0.1.csv', 'RES1.0.csv', 'CAP.csv', 'IND.csv', 'PKG_RATINGS.csv']
 EXTRA_FILES = ['Example.epxyz', 'Example.docx']
@@ -118,6 +119,13 @@ def copy_app_files():
             shutil.copy2(src, DIST_DIR / filename)
             print(f'  Copied {filename}')
 
+    if TUTORIALS_DIR.exists():
+        dst_tutorials = DIST_DIR / 'templates' / 'Tutorials'
+        shutil.copytree(TUTORIALS_DIR, dst_tutorials, dirs_exist_ok=True)
+        print('  Copied templates/Tutorials/')
+    else:
+        print('  WARNING: templates/Tutorials not found')
+
 
 def build_launcher():
     print('=== Phase 4: Building launcher ===')
@@ -133,7 +141,7 @@ def build_launcher():
 
 def create_zip():
     print('=== Phase 5: Creating distribution zip ===')
-    zip_path = DIST_DIR.parent / 'EngineeringPapyr-v1.0.7.zip'
+    zip_path = DIST_DIR.parent / 'EngineeringPapyr-v1.0.8.zip'
     if zip_path.exists():
         zip_path.unlink()
     shutil.make_archive(
@@ -155,7 +163,7 @@ def build():
     print()
     print('=== Build complete ===')
     print(f'  Directory: {DIST_DIR}')
-    print(f'  Zip:       {DIST_DIR.parent / "EngineeringPapyr-v1.0.7.zip"}')
+    print(f'  Zip:       {DIST_DIR.parent / "EngineeringPapyr-v1.0.8.zip"}')
 
 
 if __name__ == '__main__':

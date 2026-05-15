@@ -1954,6 +1954,33 @@ If problem persists after attempting to refresh the page, please report problem 
     return markdown;
   }
 
+  async function saveDocumentBlob(
+    fileBlob: Blob,
+    fileName: string,
+    types: FilePickerAcceptType[]
+  ): Promise<boolean> {
+    if (!window.showSaveFilePicker) {
+      saveFileBlob(fileBlob, fileName);
+      return true;
+    }
+
+    try {
+      const handle = await window.showSaveFilePicker({
+        suggestedName: fileName,
+        types,
+      });
+      const writable = await handle.createWritable();
+      await writable.write(fileBlob);
+      await writable.close();
+      return true;
+    } catch (error) {
+      if (error instanceof DOMException && error.name === "AbortError") {
+        return false;
+      }
+      throw error;
+    }
+  }
+
   async function getDocument(settings: {docType: "docx" | "pdf" | "md" | "tex", 
                               getShareableLink: boolean,
                               centerEquations: boolean,
@@ -1963,7 +1990,15 @@ If problem persists after attempting to refresh the page, please report problem 
     const upload_blob = new Blob([markDown], {type: "text/markdown"});
 
     if (settings.docType === "md") {
-      saveFileBlob(upload_blob, `${appState.title}.${settings.docType}`);
+      try {
+        await saveDocumentBlob(upload_blob, `${appState.title}.${settings.docType}`, [{
+          description: "Markdown File",
+          accept: { "text/markdown": [".md"] },
+        }]);
+      } catch (error) {
+        console.log(`Error saving markdown document: ${error}`);
+        modalInfo = {state: "error", error, modalOpen: true, heading: "Saving Document"};
+      }
       return
     }
 
@@ -1986,20 +2021,10 @@ If problem persists after attempting to refresh the page, please report problem 
           type: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
         });
 
-        if (window.showSaveFilePicker) {
-          const handle = await window.showSaveFilePicker({
-            suggestedName: `${appState.title}.docx`,
-            types: [{
-              description: "Word Document",
-              accept: { "application/vnd.openxmlformats-officedocument.wordprocessingml.document": [".docx"] },
-            }],
-          });
-          const writable = await handle.createWritable();
-          await writable.write(docxBlob);
-          await writable.close();
-        } else {
-          saveFileBlob(docxBlob, `${appState.title}.docx`);
-        }
+        await saveDocumentBlob(docxBlob, `${appState.title}.docx`, [{
+          description: "Word Document",
+          accept: { "application/vnd.openxmlformats-officedocument.wordprocessingml.document": [".docx"] },
+        }]);
         modalInfo.modalOpen = false;
       } catch (error) {
         if (error instanceof DOMException && error.name === "AbortError") {

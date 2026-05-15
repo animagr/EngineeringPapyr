@@ -5,6 +5,17 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.8] - 2026-05-14
+
+### Changed
+
+- Distribution zip now includes `templates/Tutorials/` so packaged releases ship with the tutorial worksheets.
+- Document exports now share the same native file-save helper when the File System Access API is available.
+
+### Fixed
+
+- Markdown export now opens a save dialog in the native WebView app instead of silently using the browser download fallback.
+
 ## [1.0.7] - 2026-05-08
 
 ### Removed
