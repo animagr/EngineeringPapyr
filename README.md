@@ -47,37 +47,27 @@ Math cells have an optional annotation column to the right for units description
 - Saves automatically and persists with the sheet
 - Included in Markdown/DOCX export as `*[annotation]*`
 
-### Extreme Value Analysis (EVA) Cell
+### Worst Case Analysis (WCA) Cell
 
-Finds worst-case min/max of an output expression by evaluating all 2^n combinations of input parameter bounds, plus sensitivity analysis. Supports up to 25 parameters (2^25 = 33,554,432 combinations) — made practical by using `lambdify` to convert SymPy expressions into fast NumPy functions, evaluating millions of combinations in seconds instead of hours.
+Combines worst-case EVA and statistical RSS tolerance analysis in one cell. WCA computes EVA min/max by evaluating all 2^n combinations of input parameter bounds, and computes RSS nominal/min/max from independent parameter deviations. RSS sensitivity is shown as % of RSS variance. Supports up to 25 parameters.
 
 1. Define parameters on the sheet (e.g., `V = 10 [V]`, `R = 1000 [Ω]`, `I = V / R =`)
-2. Insert an EVA cell
+2. Insert a WCA cell
 3. Set the **Query** field to the expression to evaluate (e.g., `I=`)
-4. Add parameter rows with **Parameter** name, **Min**, and **Max** values2
-
-**How it works:**
-
-- Evaluates all 2^n combinations of min/max bounds (max 25 parameters)
-- Shows nominal value plus extreme min and max
-- Sensitivity analysis: varies each parameter while holding others at midpoint, reports percentage contribution (sorted highest to lowest)
-
-### Root Sum Square (RSS) Analysis Cell
-
-Statistical tolerance analysis cell that computes the RSS error envelope. Unlike EVA's worst-case (all tolerances at extremes simultaneously), RSS assumes parameter variations are independent and combines them as root-sum-of-squares.
-
-1. Define parameters on the sheet
-2. Insert an RSS cell
-3. Set the **Query** field to the expression to evaluate
 4. Add parameter rows with **Parameter** name, **Min**, **Nominal**, and **Max** values
 
 **How it works:**
 
-- Evaluates the query at all-nominal to get the baseline output
-- For each parameter, computes the output deviation when that parameter moves to its worst-case limit (all others held at nominal)
+- EVA evaluates all 2^n combinations of min/max bounds and reports EVA Min/Max
+- RSS evaluates the query at all-nominal to get the baseline output
 - RSS total = sqrt(delta_1^2 + delta_2^2 + ... + delta_n^2)
 - RSS Min = nominal - RSS total, RSS Max = nominal + RSS total
-- Sensitivity: reports % of RSS variance (delta_i^2 / sum of all delta^2) per parameter, sorted highest first
+- RSS sensitivity reports % of RSS variance (delta_i^2 / sum of all delta^2) per parameter, sorted highest first
+- Generated variables expose `EVAmin`, `EVAmax`, `RSSmin`, and `RSSmax` names for downstream math cells
+
+### Legacy EVA/RSS Cells
+
+Older sheets may contain separate EVA and RSS cells. EngineeringPapyr still loads, renders, computes, saves, and exports those legacy cells for backwards compatibility. New sheets should use WCA.
 
 **Why % of RSS variance (not arithmetic %):**
 
@@ -88,14 +78,14 @@ In RSS, errors combine as variances (squares). A source contributing 50% of RSS 
 - Error sources are uncorrelated (no shared cause — e.g., two resistors on different packages)
 - Transfer function is approximately linear over the tolerance range
 
-**When RSS is NOT valid (use EVA instead):**
+**When RSS is NOT valid (use EVA/WCA worst-case bounds instead):**
 - Parameters are correlated (e.g., resistors from the same reel track together)
 - A single root cause drives multiple parameters (e.g., a supply rail feeding multiple stages)
 - The transfer function is highly nonlinear over the tolerance range
 
 ### Example
 
-The included `Example.epxyz` file demonstrates both EVA and RSS analysis on an op-amp non-inverting amplifier with divided feedback. It models `V_OUT` as a function of resistor tolerances (`R_lower`, `R_upper`), bias current (`I_B`), offset current (`I_OS`), and offset voltage (`V_OS`), showing worst-case bounds, statistical bounds, and per-parameter sensitivity.
+The included `Example.epxyz` file demonstrates tolerance analysis on an op-amp non-inverting amplifier with divided feedback. It models `V_OUT` as a function of resistor tolerances (`R_lower`, `R_upper`), bias current (`I_B`), offset current (`I_OS`), and offset voltage (`V_OS`), showing worst-case bounds, statistical bounds, and per-parameter sensitivity.
 
 Open it from the app via the file open button or drag and drop.
 

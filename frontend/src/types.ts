@@ -70,6 +70,21 @@ export type RssDefinition = {
   queryIndex: number;
 };
 
+export type WcaParameter = {
+  name: string;
+  minSympy: string;
+  minImplicitParams: ImplicitParameter[];
+  nominalSympy: string;
+  nominalImplicitParams: ImplicitParameter[];
+  maxSympy: string;
+  maxImplicitParams: ImplicitParameter[];
+};
+
+export type WcaDefinition = {
+  parameters: WcaParameter[];
+  queryIndex: number;
+};
+
 export type StatementsAndSystems = {
   statements: (Statement | SubQueryStatement)[];
   systemDefinitions: SystemDefinition[];
@@ -81,6 +96,7 @@ export type StatementsAndSystems = {
   convertFloatsToFractions: boolean;
   extremeValueDefinitions?: ExtremeValueDefinition[];
   rssDefinitions?: RssDefinition[];
+  wcaDefinitions?: WcaDefinition[];
 }
 
 

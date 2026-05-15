@@ -141,7 +141,7 @@ def build_launcher():
 
 def create_zip():
     print('=== Phase 5: Creating distribution zip ===')
-    zip_path = DIST_DIR.parent / 'EngineeringPapyr-v1.0.8.zip'
+    zip_path = DIST_DIR.parent / 'EngineeringPapyr-v1.0.9.zip'
     if zip_path.exists():
         zip_path.unlink()
     shutil.make_archive(
@@ -163,7 +163,7 @@ def build():
     print()
     print('=== Build complete ===')
     print(f'  Directory: {DIST_DIR}')
-    print(f'  Zip:       {DIST_DIR.parent / "EngineeringPapyr-v1.0.8.zip"}')
+    print(f'  Zip:       {DIST_DIR.parent / "EngineeringPapyr-v1.0.9.zip"}')
 
 
 if __name__ == '__main__':

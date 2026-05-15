@@ -145,7 +145,7 @@ export type ExtremeValueResult = {
   error?: string;
 };
 
-export function isExtremeValueResult(result: Result | FiniteImagResult | MatrixResult | DataTableResult | RenderResult | PlotResult[] | ExtremeValueResult | RssResult): result is ExtremeValueResult {
+export function isExtremeValueResult(result: Result | FiniteImagResult | MatrixResult | DataTableResult | RenderResult | PlotResult[] | ExtremeValueResult | RssResult | WcaResult): result is ExtremeValueResult {
   return "extremeValueResult" in result && result.extremeValueResult;
 }
 
@@ -166,13 +166,30 @@ export type RssResult = {
   error?: string;
 };
 
-export function isRssResult(result: Result | FiniteImagResult | MatrixResult | DataTableResult | RenderResult | PlotResult[] | ExtremeValueResult | RssResult): result is RssResult {
+export function isRssResult(result: Result | FiniteImagResult | MatrixResult | DataTableResult | RenderResult | PlotResult[] | ExtremeValueResult | RssResult | WcaResult): result is RssResult {
   return "rssResult" in result && result.rssResult;
+}
+
+export type WcaResult = {
+  wcaResult: true;
+  nominalResult: Result | FiniteImagResult;
+  evaMinResult: Result | FiniteImagResult;
+  evaMaxResult: Result | FiniteImagResult;
+  rssMinResult: Result | FiniteImagResult;
+  rssMaxResult: Result | FiniteImagResult;
+  rssTotal: number;
+  rssSensitivity?: RssSensitivityEntry[];
+  generatedVariables?: GeneratedVariable[];
+  error?: string;
+};
+
+export function isWcaResult(result: Result | FiniteImagResult | MatrixResult | DataTableResult | RenderResult | PlotResult[] | ExtremeValueResult | RssResult | WcaResult): result is WcaResult {
+  return "wcaResult" in result && result.wcaResult;
 }
 
 export type Results = {
   error: null | string;
-  results: (Result | FiniteImagResult | MatrixResult | DataTableResult | RenderResult | PlotResult[] | ExtremeValueResult | RssResult)[];
+  results: (Result | FiniteImagResult | MatrixResult | DataTableResult | RenderResult | PlotResult[] | ExtremeValueResult | RssResult | WcaResult)[];
   systemResults: SystemResult[];
   codeCellResults: Record<string, CodeCellResult>;
 };

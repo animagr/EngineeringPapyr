@@ -555,6 +555,19 @@ class RssDefinition(TypedDict):
     parameters: list[RssParameter]
     queryIndex: int
 
+class WcaParameter(TypedDict):
+    name: str
+    minSympy: str
+    minImplicitParams: list[ImplicitParameter]
+    nominalSympy: str
+    nominalImplicitParams: list[ImplicitParameter]
+    maxSympy: str
+    maxImplicitParams: list[ImplicitParameter]
+
+class WcaDefinition(TypedDict):
+    parameters: list[WcaParameter]
+    queryIndex: int
+
 class StatementsAndSystems(TypedDict):
     statements: list[InputStatement]
     systemDefinitions: list[SystemDefinition]
@@ -566,6 +579,7 @@ class StatementsAndSystems(TypedDict):
     convertFloatsToFractions: bool
     extremeValueDefinitions: NotRequired[list[ExtremeValueDefinition]]
     rssDefinitions: NotRequired[list[RssDefinition]]
+    wcaDefinitions: NotRequired[list[WcaDefinition]]
 
 def is_code_function_query_statement(statement: InputAndSystemStatement) -> TypeGuard[CodeFunctionQueryStatement]:
     return statement.get("isCodeFunctionQuery", False)
@@ -713,9 +727,21 @@ class RssResult(TypedDict):
     generatedVariables: NotRequired[list[GeneratedVariable]]
     error: NotRequired[str]
 
+class WcaResult(TypedDict):
+    wcaResult: Literal[True]
+    nominalResult: Result | FiniteImagResult
+    evaMinResult: Result | FiniteImagResult
+    evaMaxResult: Result | FiniteImagResult
+    rssMinResult: Result | FiniteImagResult
+    rssMaxResult: Result | FiniteImagResult
+    rssTotal: float
+    rssSensitivity: NotRequired[list[RssSensitivityEntry]]
+    generatedVariables: NotRequired[list[GeneratedVariable]]
+    error: NotRequired[str]
+
 class Results(TypedDict):
     error: None | str
-    results: list[Result | FiniteImagResult | MatrixResult | DataTableResult | RenderResult | list[PlotResult] | ExtremeValueResult]
+    results: list[Result | FiniteImagResult | MatrixResult | DataTableResult | RenderResult | list[PlotResult] | ExtremeValueResult | RssResult | WcaResult]
     systemResults: list[SystemResult]
     codeCellResults: dict[str, CodeCellResult]
 
@@ -3702,7 +3728,8 @@ def evaluate_statements(statements: list[InputAndSystemStatement],
                         placeholder_dummy_set: set[Function],
                         custom_definition_names: list[str],
                         extreme_value_definitions: list[ExtremeValueDefinition] | None = None,
-                        rss_definitions: list[RssDefinition] | None = None) -> tuple[list[Result | FiniteImagResult | list[PlotResult] | MatrixResult | DataTableResult | RenderResult | ExtremeValueResult | RssResult], dict[int,bool]]:
+                        rss_definitions: list[RssDefinition] | None = None,
+                        wca_definitions: list[WcaDefinition] | None = None) -> tuple[list[Result | FiniteImagResult | list[PlotResult] | MatrixResult | DataTableResult | RenderResult | ExtremeValueResult | RssResult | WcaResult], dict[int,bool]]:
     num_statements = len(statements)
 
     if num_statements == 0:
@@ -3997,7 +4024,7 @@ def evaluate_statements(statements: list[InputAndSystemStatement],
 
         result["generatedCode"] = generatedCode
 
-    # Collect synthetic EVA/RSS variables for downstream referencing
+    # Collect synthetic EVA/RSS/WCA variables for downstream referencing
     synthetic_eva_rss_entries: list[tuple[Symbol, str, Expr, str]] = []  # (symbol, value_str, dim_expr, latex)
 
     # Extreme Value Analysis post-processing
@@ -4690,7 +4717,474 @@ def evaluate_statements(statements: list[InputAndSystemStatement],
                 generatedVariables=rss_generated_vars
             )
 
-    # Re-evaluate downstream expressions that reference synthetic EVA/RSS variables
+    if wca_definitions:
+        for wca_def in wca_definitions:
+            query_index = wca_def["queryIndex"]
+            wca_params = wca_def["parameters"]
+
+            if len(wca_params) == 0:
+                continue
+
+            wca_param_names = set(wp["name"] for wp in wca_params)
+
+            query_stmt = None
+            query_stmt_index = None
+            for si, stmt in enumerate(expanded_statements):
+                if stmt.get("index") == query_index and stmt.get("type") == "query":
+                    query_stmt = stmt
+                    query_stmt_index = si
+                    break
+
+            if query_stmt is None:
+                continue
+
+            query_expression = query_stmt["expression"]
+            for sub_stmt in reversed(expanded_statements[0:query_stmt_index]):
+                if sub_stmt["type"] == "assignment" and not sub_stmt.get("isFunction", False):
+                    sub_name = sub_stmt["name"]
+                    if sub_name in wca_param_names:
+                        continue
+                    if sub_name in map(lambda x: str(x), query_expression.free_symbols):
+                        query_expression = subs_wrapper(query_expression, {symbols(sub_name): sub_stmt["expression"]})
+                elif sub_stmt["type"] == "local_sub":
+                    pass
+
+            query_expression = cast(Expr, query_expression.doit())
+
+            original_nominal_result = results_with_ranges[query_index]
+            fallback_result = cast(Result | FiniteImagResult, original_nominal_result)
+
+            param_overrides: list[tuple[Symbol, Expr, Expr, Expr]] = []
+            wca_error = None
+
+            for wca_param in wca_params:
+                param_name = wca_param["name"]
+
+                found = False
+                for stmt in expanded_statements:
+                    if stmt.get("type") == "assignment" and stmt.get("name") == param_name:
+                        found = True
+                        break
+
+                if not found:
+                    wca_error = f"Parameter '{param_name}' not found as an assignment on the sheet"
+                    break
+
+                override_symbol = symbols(param_name)
+
+                try:
+                    min_ip_subs = {}
+                    for ip in wca_param["minImplicitParams"]:
+                        if ip["si_value"] is not None:
+                            min_ip_subs[symbols(ip["name"])] = sympify(ip["si_value"], rational=convert_floats_to_fractions)
+
+                    nominal_ip_subs = {}
+                    for ip in wca_param["nominalImplicitParams"]:
+                        if ip["si_value"] is not None:
+                            nominal_ip_subs[symbols(ip["name"])] = sympify(ip["si_value"], rational=convert_floats_to_fractions)
+
+                    max_ip_subs = {}
+                    for ip in wca_param["maxImplicitParams"]:
+                        if ip["si_value"] is not None:
+                            max_ip_subs[symbols(ip["name"])] = sympify(ip["si_value"], rational=convert_floats_to_fractions)
+
+                    min_si = sympify(wca_param["minSympy"], rational=convert_floats_to_fractions).subs(min_ip_subs)
+                    nominal_si = sympify(wca_param["nominalSympy"], rational=convert_floats_to_fractions).subs(nominal_ip_subs)
+                    max_si = sympify(wca_param["maxSympy"], rational=convert_floats_to_fractions).subs(max_ip_subs)
+
+                    if min_si.free_symbols or nominal_si.free_symbols or max_si.free_symbols:
+                        wca_error = f"Could not resolve min/nominal/max values for parameter '{param_name}'"
+                        break
+
+                    param_overrides.append((override_symbol, min_si, nominal_si, max_si))
+                except Exception as e:
+                    wca_error = f"Error processing parameter '{param_name}': {e}"
+                    break
+
+            if wca_error:
+                results_with_ranges[query_index] = WcaResult(
+                    wcaResult=True,
+                    nominalResult=fallback_result,
+                    evaMinResult=fallback_result,
+                    evaMaxResult=fallback_result,
+                    rssMinResult=fallback_result,
+                    rssMaxResult=fallback_result,
+                    rssTotal=0.0,
+                    error=wca_error
+                )
+                continue
+
+            wca_dim_subs = dict(dimensional_analysis_subs)
+            for override_sym, _, _, _ in param_overrides:
+                if override_sym not in wca_dim_subs:
+                    param_name_str = str(override_sym)
+                    dim_expr = S(1)
+                    for stmt in expanded_statements:
+                        if stmt.get("type") == "assignment" and stmt.get("name") == param_name_str:
+                            if "dim_expression" in stmt and stmt["dim_expression"] is not None:
+                                dim_expr = stmt["dim_expression"]
+                            break
+                    wca_dim_subs[override_sym] = dim_expr
+
+            nominal_subs = dict(parameter_subs)
+            for sym, _, nom_val, _ in param_overrides:
+                nominal_subs[sym] = nom_val
+
+            try:
+                nominal_eval, nominal_sym, nominal_dim, nominal_dim_error = get_evaluated_expression(
+                    query_expression, not convert_floats_to_fractions,
+                    nominal_subs, wca_dim_subs, placeholder_map, placeholder_set,
+                    {}, variable_name_map
+                )
+
+                if is_matrix(nominal_eval):
+                    results_with_ranges[query_index] = WcaResult(
+                        wcaResult=True,
+                        nominalResult=fallback_result,
+                        evaMinResult=fallback_result,
+                        evaMaxResult=fallback_result,
+                        rssMinResult=fallback_result,
+                        rssMaxResult=fallback_result,
+                        rssTotal=0.0,
+                        error="WCA analysis does not support matrix results"
+                    )
+                    continue
+
+                nominal_result_obj = get_result(
+                    nominal_eval, nominal_dim,
+                    simplify_symbolic_expressions,
+                    nominal_dim_error, cast(Expr, nominal_sym),
+                    False, custom_base_units, False, "", variable_name_map
+                )
+
+                if not (nominal_result_obj.get("numeric", False) and nominal_result_obj.get("finite", False)):
+                    nominal_fallback = cast(Result | FiniteImagResult, nominal_result_obj)
+                    results_with_ranges[query_index] = WcaResult(
+                        wcaResult=True,
+                        nominalResult=nominal_fallback,
+                        evaMinResult=nominal_fallback,
+                        evaMaxResult=nominal_fallback,
+                        rssMinResult=nominal_fallback,
+                        rssMaxResult=nominal_fallback,
+                        rssTotal=0.0,
+                        error="Nominal evaluation did not produce a finite numeric result"
+                    )
+                    continue
+
+                nominal_numeric = float(nominal_result_obj["value"])
+            except Exception as e:
+                results_with_ranges[query_index] = WcaResult(
+                    wcaResult=True,
+                    nominalResult=fallback_result,
+                    evaMinResult=fallback_result,
+                    evaMaxResult=fallback_result,
+                    rssMinResult=fallback_result,
+                    rssMaxResult=fallback_result,
+                    rssTotal=0.0,
+                    error=f"Error evaluating nominal: {e}"
+                )
+                continue
+
+            n = len(param_overrides)
+            eva_min_result = None
+            eva_max_result = None
+
+            wca_eva_fast = False
+            try:
+                import numpy as np
+
+                wca_param_syms = {sym for sym, _, _, _ in param_overrides}
+                wca_base_subs = {k: v for k, v in parameter_subs.items() if k not in wca_param_syms}
+
+                wca_resolved_expr, _, _ = replace_placeholder_funcs(
+                    not convert_floats_to_fractions, query_expression, None, False,
+                    wca_base_subs, wca_dim_subs, placeholder_map, placeholder_set,
+                    {}, DataTableSubs()
+                )
+
+                wca_sym_list = [sym for sym, _, _, _ in param_overrides]
+                wca_fast_func = lambdify(wca_sym_list, wca_resolved_expr, modules=["numpy", "math", "sympy"])
+
+                min_floats = [float(min_val.evalf()) for _, min_val, _, _ in param_overrides]
+                max_floats = [float(max_val.evalf()) for _, _, _, max_val in param_overrides]
+
+                best_min_val = float('inf')
+                best_max_val = float('-inf')
+                min_combo_vals = None
+                max_combo_vals = None
+
+                for combo_vals in itertools_product(*zip(min_floats, max_floats)):
+                    val = float(wca_fast_func(*combo_vals))
+                    if math.isfinite(val) and not math.isnan(val):
+                        if val < best_min_val:
+                            best_min_val = val
+                            min_combo_vals = combo_vals
+                        if val > best_max_val:
+                            best_max_val = val
+                            max_combo_vals = combo_vals
+
+                if min_combo_vals is not None and max_combo_vals is not None:
+                    for combo_vals, is_min in [(min_combo_vals, True), (max_combo_vals, False)]:
+                        trial_subs = dict(parameter_subs)
+                        for sym, val in zip(wca_sym_list, combo_vals):
+                            trial_subs[sym] = sympify(val)
+
+                        eval_result, sym_result, dim_result, dim_sub_error = get_evaluated_expression(
+                            query_expression, not convert_floats_to_fractions,
+                            trial_subs, wca_dim_subs, placeholder_map, placeholder_set,
+                            {}, variable_name_map
+                        )
+
+                        if not is_matrix(eval_result):
+                            trial_result = get_result(
+                                eval_result, dim_result, simplify_symbolic_expressions,
+                                dim_sub_error, cast(Expr, sym_result),
+                                False, custom_base_units, False, "", variable_name_map
+                            )
+                            if is_min:
+                                eva_min_result = trial_result
+                            else:
+                                eva_max_result = trial_result
+
+                wca_eva_fast = True
+            except Exception:
+                eva_min_result = None
+                eva_max_result = None
+
+            if not wca_eva_fast:
+                best_min_val = float('inf')
+                best_max_val = float('-inf')
+
+                for combo in itertools_product([False, True], repeat=n):
+                    trial_subs = dict(parameter_subs)
+                    for use_max, (sym, min_val, _, max_val) in zip(combo, param_overrides):
+                        trial_subs[sym] = max_val if use_max else min_val
+
+                    try:
+                        eval_result, sym_result, dim_result, dim_sub_error = get_evaluated_expression(
+                            query_expression, not convert_floats_to_fractions,
+                            trial_subs, wca_dim_subs, placeholder_map, placeholder_set,
+                            {}, variable_name_map
+                        )
+
+                        if is_matrix(eval_result):
+                            continue
+
+                        trial_result = get_result(
+                            eval_result, dim_result, simplify_symbolic_expressions,
+                            dim_sub_error, cast(Expr, sym_result),
+                            False, custom_base_units, False, "", variable_name_map
+                        )
+
+                        if trial_result.get("numeric", False) and trial_result.get("finite", False):
+                            try:
+                                val = float(trial_result["value"])
+                                if val < best_min_val:
+                                    best_min_val = val
+                                    eva_min_result = trial_result
+                                if val > best_max_val:
+                                    best_max_val = val
+                                    eva_max_result = trial_result
+                            except (ValueError, TypeError):
+                                pass
+                    except Exception:
+                        continue
+
+            if eva_min_result is None or eva_max_result is None:
+                nominal_fallback = cast(Result | FiniteImagResult, nominal_result_obj)
+                results_with_ranges[query_index] = WcaResult(
+                    wcaResult=True,
+                    nominalResult=nominal_fallback,
+                    evaMinResult=nominal_fallback,
+                    evaMaxResult=nominal_fallback,
+                    rssMinResult=nominal_fallback,
+                    rssMaxResult=nominal_fallback,
+                    rssTotal=0.0,
+                    error="Could not determine EVA min/max from parameter combinations"
+                )
+                continue
+
+            deltas: list[tuple[str, float, float]] = []
+            rss_eval_error = None
+
+            wca_rss_fast = False
+            try:
+                import numpy as np
+
+                if not wca_eva_fast:
+                    wca_param_syms = {sym for sym, _, _, _ in param_overrides}
+                    wca_base_subs = {k: v for k, v in parameter_subs.items() if k not in wca_param_syms}
+
+                    wca_resolved_expr, _, _ = replace_placeholder_funcs(
+                        not convert_floats_to_fractions, query_expression, None, False,
+                        wca_base_subs, wca_dim_subs, placeholder_map, placeholder_set,
+                        {}, DataTableSubs()
+                    )
+
+                    wca_sym_list = [sym for sym, _, _, _ in param_overrides]
+                    wca_fast_func = lambdify(wca_sym_list, wca_resolved_expr, modules=["numpy", "math", "sympy"])
+
+                nom_floats = [float(nom_val.evalf()) for _, _, nom_val, _ in param_overrides]
+                min_floats = [float(min_val.evalf()) for _, min_val, _, _ in param_overrides]
+                max_floats = [float(max_val.evalf()) for _, _, _, max_val in param_overrides]
+
+                for i, (sym, min_val, nom_val, max_val) in enumerate(param_overrides):
+                    args_min = list(nom_floats)
+                    args_min[i] = min_floats[i]
+                    try:
+                        val_at_min = float(wca_fast_func(*args_min))
+                    except Exception:
+                        val_at_min = None
+
+                    args_max = list(nom_floats)
+                    args_max[i] = max_floats[i]
+                    try:
+                        val_at_max = float(wca_fast_func(*args_max))
+                    except Exception:
+                        val_at_max = None
+
+                    if val_at_min is None or val_at_max is None:
+                        rss_eval_error = f"Could not evaluate query for parameter '{sym}'"
+                        break
+
+                    delta_from_min = abs(val_at_min - nominal_numeric)
+                    delta_from_max = abs(val_at_max - nominal_numeric)
+                    delta_i = max(delta_from_min, delta_from_max)
+                    abs_delta = abs(val_at_max - val_at_min)
+                    deltas.append((str(sym), delta_i, abs_delta))
+
+                wca_rss_fast = True
+            except Exception:
+                if not wca_rss_fast:
+                    deltas = []
+                    rss_eval_error = None
+
+            if not wca_rss_fast:
+                for i, (sym, min_val, nom_val, max_val) in enumerate(param_overrides):
+                    trial_subs_min = dict(nominal_subs)
+                    trial_subs_min[sym] = min_val
+                    try:
+                        eval_at_min, _, _, _ = get_evaluated_expression(
+                            query_expression, not convert_floats_to_fractions,
+                            trial_subs_min, wca_dim_subs, placeholder_map, placeholder_set,
+                            {}, variable_name_map
+                        )
+                        val_at_min = float(eval_at_min.evalf(PRECISION)) if not is_matrix(eval_at_min) else None
+                    except Exception:
+                        val_at_min = None
+
+                    trial_subs_max = dict(nominal_subs)
+                    trial_subs_max[sym] = max_val
+                    try:
+                        eval_at_max, _, _, _ = get_evaluated_expression(
+                            query_expression, not convert_floats_to_fractions,
+                            trial_subs_max, wca_dim_subs, placeholder_map, placeholder_set,
+                            {}, variable_name_map
+                        )
+                        val_at_max = float(eval_at_max.evalf(PRECISION)) if not is_matrix(eval_at_max) else None
+                    except Exception:
+                        val_at_max = None
+
+                    if val_at_min is None or val_at_max is None:
+                        rss_eval_error = f"Could not evaluate query for parameter '{sym}'"
+                        break
+
+                    delta_from_min = abs(val_at_min - nominal_numeric)
+                    delta_from_max = abs(val_at_max - nominal_numeric)
+                    delta_i = max(delta_from_min, delta_from_max)
+                    abs_delta = abs(val_at_max - val_at_min)
+                    deltas.append((str(sym), delta_i, abs_delta))
+
+            if rss_eval_error:
+                nominal_fallback = cast(Result | FiniteImagResult, nominal_result_obj)
+                results_with_ranges[query_index] = WcaResult(
+                    wcaResult=True,
+                    nominalResult=nominal_fallback,
+                    evaMinResult=cast(Result | FiniteImagResult, eva_min_result),
+                    evaMaxResult=cast(Result | FiniteImagResult, eva_max_result),
+                    rssMinResult=nominal_fallback,
+                    rssMaxResult=nominal_fallback,
+                    rssTotal=0.0,
+                    error=rss_eval_error
+                )
+                continue
+
+            sum_of_squares = sum(d_i**2 for _, d_i, _ in deltas)
+            rss_total = float(sum_of_squares**0.5)
+
+            rss_min_value = nominal_numeric - rss_total
+            rss_max_value = nominal_numeric + rss_total
+
+            rss_min_result_obj = dict(nominal_result_obj)
+            rss_min_result_obj["value"] = str(rss_min_value)
+            rss_min_result_obj["symbolicValue"] = str(rss_min_value)
+
+            rss_max_result_obj = dict(nominal_result_obj)
+            rss_max_result_obj["value"] = str(rss_max_value)
+            rss_max_result_obj["symbolicValue"] = str(rss_max_value)
+
+            rss_sensitivity_list: list[RssSensitivityEntry] = []
+            for name, delta_i, abs_delta in deltas:
+                variance_pct = (delta_i**2 / sum_of_squares * 100) if sum_of_squares > 0 else 0.0
+                rss_sensitivity_list.append(RssSensitivityEntry(
+                    paramName=name,
+                    delta=abs_delta,
+                    varianceContribution=variance_pct
+                ))
+            rss_sensitivity_list.sort(key=lambda e: e["varianceContribution"], reverse=True)
+
+            wca_generated_vars: list[GeneratedVariable] = []
+            wca_query_sympy = query_stmt.get("sympy", "")
+            if wca_query_sympy:
+                wca_base = wca_query_sympy[:-len("_as_variable")] if wca_query_sympy.endswith("_as_variable") else wca_query_sympy
+                wca_orig_latex = variable_name_map.get(Symbol(wca_query_sympy), wca_query_sympy)
+                try:
+                    _, wca_query_dim, _ = replace_placeholder_funcs(
+                        not convert_floats_to_fractions, query_expression, None, False,
+                        parameter_subs, wca_dim_subs, placeholder_map, placeholder_set,
+                        {}, DataTableSubs()
+                    )
+                except Exception:
+                    wca_query_dim = S(1)
+                if wca_query_dim is None:
+                    wca_query_dim = S(1)
+
+                wca_generated_results = [
+                    ("EVAmin", eva_min_result),
+                    ("EVAmax", eva_max_result),
+                    ("RSSmin", rss_min_result_obj),
+                    ("RSSmax", rss_max_result_obj),
+                ]
+                for wca_suffix, wca_res in wca_generated_results:
+                    wca_parts = wca_base.split('_', 1)
+                    if len(wca_parts) > 1:
+                        syn_name = f"{wca_parts[0]}_{wca_parts[1]}{wca_suffix}_as_variable"
+                    else:
+                        syn_name = f"{wca_base}_{wca_suffix}_as_variable"
+                    syn_val = wca_res.get("value", "")
+                    if syn_val:
+                        if wca_orig_latex.endswith('}') and '_{' in wca_orig_latex:
+                            syn_latex = wca_orig_latex[:-1] + '_{' + wca_suffix + '}}'
+                            input_latex = wca_orig_latex[:-1] + wca_suffix + '}'
+                        else:
+                            syn_latex = wca_orig_latex + '_{' + wca_suffix + '}'
+                            input_latex = syn_latex
+                        synthetic_eva_rss_entries.append((Symbol(syn_name), syn_val, wca_query_dim, syn_latex))
+                        wca_generated_vars.append(GeneratedVariable(latex=syn_latex, inputLatex=input_latex))
+
+            results_with_ranges[query_index] = WcaResult(
+                wcaResult=True,
+                nominalResult=cast(Result | FiniteImagResult, nominal_result_obj),
+                evaMinResult=cast(Result | FiniteImagResult, eva_min_result),
+                evaMaxResult=cast(Result | FiniteImagResult, eva_max_result),
+                rssMinResult=cast(Result | FiniteImagResult, rss_min_result_obj),
+                rssMaxResult=cast(Result | FiniteImagResult, rss_max_result_obj),
+                rssTotal=rss_total,
+                rssSensitivity=rss_sensitivity_list,
+                generatedVariables=wca_generated_vars
+            )
+
+    # Re-evaluate downstream expressions that reference synthetic EVA/RSS/WCA variables
     synthetic_sub_results: list[Result] = []
     if synthetic_eva_rss_entries:
         updated_parameter_subs = dict(parameter_subs)
@@ -4766,10 +5260,11 @@ def get_query_values(statements: list[InputAndSystemStatement],
                      placeholder_dummy_set: set[Function],
                      custom_definition_names: list[str],
                      extreme_value_definitions: list[ExtremeValueDefinition] | None = None,
-                     rss_definitions: list[RssDefinition] | None = None):
+                     rss_definitions: list[RssDefinition] | None = None,
+                     wca_definitions: list[WcaDefinition] | None = None):
     error: None | str = None
 
-    results: list[Result | FiniteImagResult | list[PlotResult] | MatrixResult | DataTableResult | RenderResult | ExtremeValueResult | RssResult] = []
+    results: list[Result | FiniteImagResult | list[PlotResult] | MatrixResult | DataTableResult | RenderResult | ExtremeValueResult | RssResult | WcaResult] = []
     numerical_system_cell_errors: dict[int, bool] = {}
     try:
         results, numerical_system_cell_errors = evaluate_statements(statements,
@@ -4781,7 +5276,8 @@ def get_query_values(statements: list[InputAndSystemStatement],
                                                                     placeholder_dummy_set,
                                                                     custom_definition_names,
                                                                     extreme_value_definitions,
-                                                                    rss_definitions)
+                                                                    rss_definitions,
+                                                                    wca_definitions)
     except DuplicateAssignment as e:
         error = f"Duplicate assignment of variable {e}"
     except ReferenceCycle as e:
@@ -4951,6 +5447,7 @@ def solve_sheet(statements_and_systems) -> str:
     convert_floats_to_fractions = statements_and_systems["convertFloatsToFractions"]
     extreme_value_definitions: list[ExtremeValueDefinition] = statements_and_systems.get("extremeValueDefinitions", [])
     rss_definitions: list[RssDefinition] = statements_and_systems.get("rssDefinitions", [])
+    wca_definitions: list[WcaDefinition] = statements_and_systems.get("wcaDefinitions", [])
 
     code_cell_result_store: dict[str, CodeCellResultCollector] = {}
 
@@ -5030,7 +5527,7 @@ def solve_sheet(statements_and_systems) -> str:
 
     # now solve the sheet
     error: str | None
-    results: list[Result | FiniteImagResult | list[PlotResult] | MatrixResult | DataTableResult | RenderResult]
+    results: list[Result | FiniteImagResult | list[PlotResult] | MatrixResult | DataTableResult | RenderResult | ExtremeValueResult | RssResult | WcaResult]
     numerical_system_cell_errors: dict[int, bool]
     error, results, numerical_system_cell_errors = get_query_values(statements,
                                                                     custom_base_units,
@@ -5041,7 +5538,8 @@ def solve_sheet(statements_and_systems) -> str:
                                                                     placeholder_dummy_set,
                                                                     custom_definition_names,
                                                                     extreme_value_definitions,
-                                                                    rss_definitions)
+                                                                    rss_definitions,
+                                                                    wca_definitions)
 
     # If there was a numerical solve, check to make sure there were not unit mismatches
     # between the lhs and rhs of each equality in the system

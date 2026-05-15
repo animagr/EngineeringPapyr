@@ -2,12 +2,13 @@ import type { Delta } from "quill";
 import type { MathCellConfig, FluidConfig, NumberFormatOptions } from "../sheet/Sheet";
 
 export type CellTypes = "math" | "documentation" | "plot" | "table" | "piecewise" | "system" |
-                        "deleted" | "insert" | "fluid" | "dataTable" | "code" | "extremeValue" | "rss";
+                        "deleted" | "insert" | "fluid" | "dataTable" | "code" | "extremeValue" | "rss" | "wca";
 
 export type DatabaseCell = DatabaseMathCell | DatabaseDocumentationCell |
                            DatabasePlotCell | DatabaseTableCell | DatabasePiecewiseCell |
                            DatabaseSystemCell | DatabaseFluidCell | DatabaseDataTableCell |
-                           DatabaseCodeCell | DatabaseExtremeValueCell | DatabaseRssCell;
+                           DatabaseCodeCell | DatabaseExtremeValueCell | DatabaseRssCell |
+                           DatabaseWcaCell;
 
 export type DatabaseMathCell = {
   type: "math",
@@ -131,6 +132,17 @@ export type DatabaseExtremeValueCell = {
 
 export type DatabaseRssCell = {
   type: "rss",
+  id: number,
+  parameterLatexs: string[],
+  minLatexs: string[],
+  nominalLatexs: string[],
+  maxLatexs: string[],
+  queryLatex: string,
+  formatOptions?: NumberFormatOptions | null
+}
+
+export type DatabaseWcaCell = {
+  type: "wca",
   id: number,
   parameterLatexs: string[],
   minLatexs: string[],

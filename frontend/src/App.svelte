@@ -13,6 +13,7 @@
   import CodeCell from "./cells/CodeCell.svelte";
   import ExtremeValueCell from "./cells/ExtremeValueCell.svelte";
   import RssCell from "./cells/RssCell.svelte";
+  import WcaCell from "./cells/WcaCell.svelte";
   import appState from "./stores.svelte";
   import { deleteCell, addCell, incrementActiveCell, decrementActiveCell,
            resetSheet, getSheetJson, getSheetObject, clearResults } from "./stores.svelte";
@@ -22,7 +23,7 @@
   import type { FluidFunction } from "./cells/FluidCell.svelte";
   import type { CodeCellFunction } from "./cells/CodeCell.svelte";
   import { isVisible, versionToDateString, debounce, saveFileBlob, sleep, createCustomUnits } from "./utility";
-  import type { ModalInfo, RecentSheets, RecentSheetUrl, RecentSheetFile, StatementsAndSystems, ExtremeValueDefinition, RssDefinition } from "./types";
+  import type { ModalInfo, RecentSheets, RecentSheetUrl, RecentSheetFile, StatementsAndSystems, ExtremeValueDefinition, RssDefinition, WcaDefinition } from "./types";
   import type { Results } from "./resultTypes";
   import { getHash, API_GET_PATH, API_SAVE_PATH } from "./database/utility";
   import type { SheetPostBody, History } from "./database/types";
@@ -766,6 +767,7 @@
     const interpolationFunctions: (InterpolationFunction | GridInterpolationFunction)[] = [];
     const extremeValueDefinitions: ExtremeValueDefinition[] = [];
     const rssDefinitions: RssDefinition[] = [];
+    const wcaDefinitions: WcaDefinition[] = [];
     let queryCounter = 0;
 
     for (const [cellNum, cell] of appState.cells.entries()) {
@@ -921,6 +923,40 @@
         } else {
           statements.push(getBlankStatement());
         }
+      } else if (cell instanceof WcaCell) {
+        if (cell.queryField.statement && cell.queryField.statement.type === "query") {
+          statements.push(cell.queryField.statement);
+
+          const wcaParams = [];
+          for (let i = 0; i < cell.parameterFields.length; i++) {
+            const paramStatement = cell.parameterFields[i].statement;
+            const minCombined = cell.combinedMinFields[i];
+            const nominalCombined = cell.combinedNominalFields[i];
+            const maxCombined = cell.combinedMaxFields[i];
+            if (paramStatement && paramStatement.type === "parameter" &&
+                minCombined.statement && minCombined.statement.type === "assignment" &&
+                nominalCombined.statement && nominalCombined.statement.type === "assignment" &&
+                maxCombined.statement && maxCombined.statement.type === "assignment") {
+              wcaParams.push({
+                name: paramStatement.name,
+                minSympy: minCombined.statement.sympy,
+                minImplicitParams: minCombined.statement.implicitParams,
+                nominalSympy: nominalCombined.statement.sympy,
+                nominalImplicitParams: nominalCombined.statement.implicitParams,
+                maxSympy: maxCombined.statement.sympy,
+                maxImplicitParams: maxCombined.statement.implicitParams,
+              });
+            }
+          }
+          if (wcaParams.length > 0) {
+            wcaDefinitions.push({
+              parameters: wcaParams,
+              queryIndex: statements.length - 1,
+            });
+          }
+        } else {
+          statements.push(getBlankStatement());
+        }
       }
     }
 
@@ -940,7 +976,8 @@
       simplifySymbolicExpressions: appState.config.simplifySymbolicExpressions,
       convertFloatsToFractions: appState.config.convertFloatsToFractions,
       extremeValueDefinitions: extremeValueDefinitions.length > 0 ? extremeValueDefinitions : undefined,
-      rssDefinitions: rssDefinitions.length > 0 ? rssDefinitions : undefined
+      rssDefinitions: rssDefinitions.length > 0 ? rssDefinitions : undefined,
+      wcaDefinitions: wcaDefinitions.length > 0 ? wcaDefinitions : undefined
     };
   }
 
@@ -982,6 +1019,12 @@
                      cell.minFields.some(value => value.parsingError) ||
                      cell.nominalFields.some(value => value.parsingError) ||
                      cell.maxFields.some(value => value.parsingError);
+    } else if (cell instanceof WcaCell) {
+      return accum || cell.queryField.parsingError ||
+                     cell.parameterFields.some(value => value.parsingError) ||
+                     cell.minFields.some(value => value.parsingError) ||
+                     cell.nominalFields.some(value => value.parsingError) ||
+                     cell.maxFields.some(value => value.parsingError);
     } else {
       return accum || false;
     }
@@ -1017,7 +1060,7 @@
         if (!data.error && data.results.length > 0) {
           let counter = 0;
           for (const [i, cell] of appState.cells.entries()) {
-            if ((cell.type === "math" || cell.type === "plot" || cell.type === "dataTable" || cell.type === "extremeValue" || cell.type === "rss") ) {
+            if ((cell.type === "math" || cell.type === "plot" || cell.type === "dataTable" || cell.type === "extremeValue" || cell.type === "rss" || cell.type === "wca") ) {
               appState.results[i] = data.results[counter++];
             } else {
               appState.results[i] = null;

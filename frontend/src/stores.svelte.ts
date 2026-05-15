@@ -15,6 +15,7 @@ import FluidCell from './cells/FluidCell.svelte';
 import CodeCell from './cells/CodeCell.svelte';
 import ExtremeValueCell from './cells/ExtremeValueCell.svelte';
 import RssCell from './cells/RssCell.svelte';
+import WcaCell from './cells/WcaCell.svelte';
 import PlotCell from './cells/PlotCell.svelte';
 import DeletedCellClass from "./cells/DeletedCell";
 import InsertCell from "./cells/InsertCell";
@@ -22,7 +23,7 @@ import InsertCell from "./cells/InsertCell";
 import type { History } from './database/types';
 import type { Result, FiniteImagResult, PlotResult,
               MatrixResult, SystemResult, DataTableResult,
-              CodeCellResult, RenderResult, ExtremeValueResult, RssResult} from './resultTypes';
+              CodeCellResult, RenderResult, ExtremeValueResult, RssResult, WcaResult} from './resultTypes';
 import { type Config, type InsertedSheet, type Sheet, getDefaultConfig, normalizeConfig } from './sheet/Sheet';
 
 const defaultTitle = 'New Sheet';
@@ -37,7 +38,7 @@ type AppState = {
   config: Config;
   cells: Cell[];
   title: string,
-  results: (Result | FiniteImagResult | MatrixResult | DataTableResult | RenderResult | PlotResult[] | ExtremeValueResult | RssResult | null)[];
+  results: (Result | FiniteImagResult | MatrixResult | DataTableResult | RenderResult | PlotResult[] | ExtremeValueResult | RssResult | WcaResult | null)[];
   system_results: SystemResult[] | null;
   codeCellResults: Record<string, CodeCellResult>;
   sub_results: Map<string,(Result | FiniteImagResult | MatrixResult)>;
@@ -111,7 +112,8 @@ export async function addCell(type: CellTypes, index?: number) {
   }
 
   let newCell: TableCell | MathCell | DocumentationCell | PiecewiseCell | SystemCell |
-               PlotCell | InsertCell | FluidCell | DataTableCell | ExtremeValueCell;
+               PlotCell | InsertCell | FluidCell | DataTableCell | ExtremeValueCell |
+               RssCell | WcaCell | CodeCell;
 
   if (type === "math") {
     newCell = new MathCell;
@@ -141,6 +143,8 @@ export async function addCell(type: CellTypes, index?: number) {
     newCell = new ExtremeValueCell();
   } else if (type === "rss") {
     newCell = new RssCell();
+  } else if (type === "wca") {
+    newCell = new WcaCell();
   } else {
     throw new Error(`Attempt to insert uninsertable cell type ${type}`);
   }
@@ -240,7 +244,7 @@ export function decrementActiveCell() {
 
 export function deleteCell(index: number, forceDelete=false) {
   let newCells: Cell[];
-  let newResults: (Result | FiniteImagResult | MatrixResult | DataTableResult | RenderResult | PlotResult[] | ExtremeValueResult | RssResult)[];
+  let newResults: (Result | FiniteImagResult | MatrixResult | DataTableResult | RenderResult | PlotResult[] | ExtremeValueResult | RssResult | WcaResult | null)[];
   let newSystemResults: SystemResult[];
 
   if (appState.cells[index].type !== "deleted" && 

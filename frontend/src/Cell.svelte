@@ -31,6 +31,8 @@
   import ExtremeValueCellElement from "./ExtremeValueCell.svelte";
   import RssCell from "./cells/RssCell.svelte";
   import RssCellElement from "./RssCell.svelte";
+  import WcaCell from "./cells/WcaCell.svelte";
+  import WcaCellElement from "./WcaCell.svelte";
 
   import TrashCan from "carbon-icons-svelte/lib/TrashCan.svelte";
   import ChevronUp from "carbon-icons-svelte/lib/ChevronUp.svelte";
@@ -76,7 +78,8 @@
   let cellElement: MathCellElement | DocumentationCellElement | PlotCellElement | 
                    TableCellElement | PiecewiseCellElement | 
                    SystemCellElement | DeletedCellElement | InsertCellElement |
-                   FluidCellElement | DataTableCellElement;
+                   FluidCellElement | DataTableCellElement | ExtremeValueCellElement |
+                   RssCellElement | WcaCellElement;
 
   $effect( () => {
     if (!selected) {
@@ -415,6 +418,16 @@
         bind:this={cellElement}
         index={index}
         rssCell={cell}
+      />
+    {:else if cell instanceof WcaCell}
+      <WcaCellElement
+        {insertMathCellAfter}
+        {insertInsertCellAfter}
+        {mathCellChanged}
+        {triggerSaveNeeded}
+        bind:this={cellElement}
+        index={index}
+        wcaCell={cell}
       />
     {:else if cell instanceof DeletedCell}
       <DeletedCellElement

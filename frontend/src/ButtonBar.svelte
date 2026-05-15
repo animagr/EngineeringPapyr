@@ -200,18 +200,9 @@
     </IconButton>
 
     <IconButton
-      title="Insert Extreme Value Analysis Cell Here"
-      click={() => addCellWrapper('extremeValue', index)}
-      id={last ? "add-eva-cell" : `add-eva-cell-${index}`}
-      noTouch={!last}
-    >
-      <Analytics />
-    </IconButton>
-
-    <IconButton
-      title="Insert RSS Analysis Cell Here"
-      click={() => addCellWrapper('rss', index)}
-      id={last ? "add-rss-cell" : `add-rss-cell-${index}`}
+      title="Insert WCA Cell Here"
+      click={() => addCellWrapper('wca', index)}
+      id={last ? "add-wca-cell" : `add-wca-cell-${index}`}
       noTouch={!last}
     >
       <Analytics />
