@@ -97,6 +97,7 @@ The `templates/` folder contains ready-to-use `.epxyz` design worksheets:
 - **Boost Converter** — Step-up converter power stage
 - **Buck-Boost Converter** — Inverting converter power stage
 - **Power Supply Topologies** — 20 topologies side-by-side (duty cycle, FET stress, diode stress) with a topology selection guide and control methods reference
+- **OpAmps** — Common op-amp configuration worksheets
 - **ADC Resolution** — An ADC TUE resolution example
 
 Open any template from the app, modify the input parameters, and all derived values update automatically.
