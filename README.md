@@ -6,7 +6,7 @@ A native Windows desktop build of [EngineeringPaper.xyz](https://engineeringpape
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 ![GitHub last commit](https://img.shields.io/github/last-commit/animagr/engineeringpapyr/main)
 ![GitHub commit activity](https://img.shields.io/github/commit-activity/m/animagr/engineeringpapyr/main)
-![GitHub Issues](https://img.shields.io/github/issues/animagr/engineeringpapyr/)
+![GitHub Issues](https://img.shields.io/github/issues/animagr/engineeringpapyr)
 ---
 
 ## What Is EngineeringPaper.xyz?
