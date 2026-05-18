@@ -4,6 +4,8 @@ A native Windows desktop build of [EngineeringPaper.xyz](https://engineeringpape
 
 [![Version](https://img.shields.io/github/v/release/animagr/engineeringpapyr)](https://github.com/animagr/engineeringpapyr/releases)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
+![GitHub last commit](https://img.shields.io/github/last-commit/animagr/engineeringpapyr/)
+![GitHub commit activity](https://img.shields.io/github/commit-activity/m/animagr/engineeringpapyr/)
 
 ---
 
