@@ -1,6 +1,11 @@
 # EngineeringPapyr
 
+![EngineeringPapyr](/frontend/public/EPweb.png)
+
 A native Windows desktop build of [EngineeringPaper.xyz](https://engineeringpaper.xyz) using **PyWebView** + **native Python** instead of Pyodide/WebAssembly. Calculations run via native Python with SymPy — faster startup, faster computation (3-5x faster), and a smaller footprint.
+
+[![Version](https://img.shields.io/github/v/release/animagr/engineeringpapyr)](https://github.com/animagr/engineeringpapyr/releases)
+[![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 
 ---
 
