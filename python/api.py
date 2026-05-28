@@ -73,6 +73,10 @@ class Api:
             title = params.get('title', 'document')
             paper_size = params.get('paperSize', 'letter')
 
+            # Insert empty paragraphs around documentation cells so the rendered
+            # docx has breathing room between prose and adjacent math/plot cells.
+            markdown = markdown.replace('<!--ep-doc-pad-->', '&nbsp;')
+
             geometry = 'a4paper' if paper_size == 'a4' else 'letterpaper'
             pandoc = self._find_pandoc()
             if not pandoc:
